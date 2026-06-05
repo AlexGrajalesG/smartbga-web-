@@ -54,7 +54,7 @@ export const useCarrito = create<CarritoStore>()(
       vaciar: () => set({ items: [] }),
 
       total: () =>
-        get().items.reduce((acc, i) => acc + i.producto.precio * i.cantidad, 0),
+        get().items.reduce((acc, i) => acc + i.producto.precio_venta * i.cantidad, 0),
 
       cantidadTotal: () =>
         get().items.reduce((acc, i) => acc + i.cantidad, 0),

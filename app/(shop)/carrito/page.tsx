@@ -44,7 +44,7 @@ export default function CarritoPage() {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{producto.nombre}</p>
               <p className="text-sm text-neutral-500 mt-0.5">
-                ${producto.precio.toLocaleString("es-CO")}
+                ${producto.precio_venta.toLocaleString("es-CO")}
               </p>
             </div>
 
@@ -65,7 +65,7 @@ export default function CarritoPage() {
             </div>
 
             <p className="font-semibold text-sm w-24 text-right">
-              ${(producto.precio * cantidad).toLocaleString("es-CO")}
+              ${(producto.precio_venta * cantidad).toLocaleString("es-CO")}
             </p>
 
             <button onClick={() => quitar(producto.id)} className="text-neutral-400 hover:text-red-500 transition-colors ml-2">

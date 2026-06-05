@@ -1,15 +1,123 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist);
-  --color-brand: #111111;
-  --color-brand-accent: #e5c87a;
+  /* Fuentes */
+  --font-display: var(--font-display);
+  --font-body:    var(--font-body);
+
+  /* Paleta "Vitrina BGA" — Comercio callejero + boutique */
+  --color-brand:        #1C0A0A;
+  --color-brand-red:    #8C1A1A;
+  --color-brand-red-dark: #6B1313;
+  --color-brand-gold:   #C9A84C;
+  --color-brand-warm:   #FAF7F4;
+  --color-brand-muted:  #6B5B52;
+  --color-brand-gray:   #6B6B6B;
+  --color-brand-light:  #F5F5F5;
 }
 
-* {
-  box-sizing: border-box;
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+/* Utilidades de fuente */
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+
+/* Input fields */
+.input-field {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e5e5;
+  font-size: 0.875rem;
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  background: white;
+  font-family: var(--font-body);
+}
+.input-field:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #8C1A1A;
+}
+.input-field::placeholder { color: #a3a3a3; }
+
+/* ── ANIMACIONES ────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+@keyframes beam {
+  0%   { left: -20%; }
+  100% { left: 110%; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-html {
-  scroll-behavior: smooth;
+/* Clases de animación */
+.animate-fade-up          { animation: fade-up 0.65s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-fade-up-delay-1  { opacity: 0; animation: fade-up 0.65s cubic-bezier(0.16,1,0.3,1) 0.15s forwards; }
+.animate-fade-up-delay-2  { opacity: 0; animation: fade-up 0.65s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+.animate-fade-up-delay-3  { opacity: 0; animation: fade-up 0.65s cubic-bezier(0.16,1,0.3,1) 0.45s forwards; }
+.animate-fade-up-delay-4  { opacity: 0; animation: fade-up 0.65s cubic-bezier(0.16,1,0.3,1) 0.6s forwards; }
+.animate-fade-in          { animation: fade-in 0.8s ease forwards; }
+.animate-fade-in-fast     { animation: fade-in 0.25s ease-out forwards; }
+.animate-slide-left       { animation: slide-in-left 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-slide-right      { animation: slide-in-right 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-scale-in         { animation: scale-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+.animate-float            { animation: float 3s ease-in-out infinite; }
+
+/* Marquee */
+.animate-marquee          { animation: marquee 28s linear infinite; }
+.animate-marquee-slow     { animation: marquee 40s linear infinite; }
+
+/* Scrollbar hide */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Beam effect sobre botón */
+.btn-beam {
+  position: relative;
+  overflow: hidden;
+}
+.btn-beam::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 20%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  animation: beam 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Noise texture overlay */
+.noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.06;
 }
