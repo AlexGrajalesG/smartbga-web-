@@ -108,7 +108,7 @@ export default async function ProductoPage({ params }: Props) {
             {parrafos.map((p, i) => (
               <p
                 key={i}
-                className="text-sm text-neutral-600 leading-relaxed"
+                className="text-sm text-neutral-600 leading-relaxed whitespace-pre-line"
               >
                 {p}
               </p>

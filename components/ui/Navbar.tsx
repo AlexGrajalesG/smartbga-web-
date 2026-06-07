@@ -6,14 +6,15 @@ import { useState, useEffect } from 'react'
 import { useCarrito } from '@/lib/store/carrito'
 import { useWishlist } from '@/lib/store/wishlist'
 import { logout } from '@/app/actions/auth'
-import { ShoppingBag, User, Heart } from 'lucide-react'
+import { ShoppingBag, User, Heart, LayoutDashboard } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface NavbarProps {
   user: SupabaseUser | null
+  mostrarPanelAdmin?: boolean
 }
 
-export default function Navbar({ user }: NavbarProps) {
+export default function Navbar({ user, mostrarPanelAdmin = false }: NavbarProps) {
   const cantidadTotal   = useCarrito((s) => s.cantidadTotal)
   const totalFavoritos  = useWishlist((s) => s.total())
   const [mounted, setMounted] = useState(false)
@@ -42,6 +43,15 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex items-center gap-1">
           {user ? (
             <>
+              {mostrarPanelAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 text-sm font-medium text-[#8C1A1A] hover:text-[#6B1313] transition-colors px-3 py-2 rounded-xl hover:bg-red-50"
+                >
+                  <LayoutDashboard size={16} />
+                  <span className="hidden sm:inline">Panel admin</span>
+                </Link>
+              )}
               <Link
                 href="/perfil"
                 className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-[#8C1A1A] transition-colors px-3 py-2 rounded-xl hover:bg-red-50"

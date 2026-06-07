@@ -99,6 +99,10 @@ CREATE TABLE IF NOT EXISTS productos (
   precio_venta    numeric(12,2) NOT NULL CHECK (precio_venta >= 0),
   precio_costo    numeric(12,2) CHECK (precio_costo >= 0),
   precio_anterior numeric(12,2),
+  -- Desglose opcional de precios por metodo de pago, ej:
+  -- {"contraentrega": 110000, "tarjeta": 115000, "addi": 125000, "sistecredito": 137000}
+  -- precio_venta sigue siendo el precio de referencia (= el mas bajo) para carrito/cards/totales
+  precios         jsonb,
   descripcion     text,
   categoria_id    uuid REFERENCES categorias(id) ON DELETE SET NULL,
   proveedor_id    uuid REFERENCES proveedores(id) ON DELETE SET NULL,

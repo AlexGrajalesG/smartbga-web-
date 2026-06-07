@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useWishlist } from "@/lib/store/wishlist";
 import type { Producto } from "@/types";
 import { Heart } from "lucide-react";
@@ -12,7 +13,14 @@ interface Props {
 
 export default function BotonFavorito({ producto, size = "sm", className = "" }: Props) {
   const toggle = useWishlist((s) => s.toggle);
-  const esFavorito = useWishlist((s) => s.esFavorito(producto.id));
+  const favoritoGuardado = useWishlist((s) => s.esFavorito(producto.id));
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // En SSR el wishlist (persistido en localStorage) siempre esta vacio —
+  // se fuerza "no favorito" hasta hidratar para evitar el mismatch.
+  const esFavorito = mounted && favoritoGuardado;
 
   const dim = size === "sm" ? 16 : 20;
 

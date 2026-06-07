@@ -12,6 +12,10 @@ export interface Categoria {
   created_at: string
 }
 
+// Niveles de precio mostrados en la pagina de producto segun metodo de pago.
+// Distinto de MetodoPago (que rige el pago real de una orden en checkout).
+export type NivelPrecio = 'contraentrega' | 'tarjeta' | 'addi' | 'sistecredito'
+
 export interface Producto {
   id: string
   nombre: string
@@ -19,6 +23,9 @@ export interface Producto {
   precio_venta: number
   precio_costo?: number        // solo en contexto admin
   precio_anterior: number | null
+  // Desglose opcional por metodo de pago. precio_venta sigue siendo el
+  // precio de referencia (= el mas bajo) para carrito, cards y totales.
+  precios?: Partial<Record<NivelPrecio, number>> | null
   descripcion: string | null
   categoria_id: string | null
   proveedor_id: string | null
