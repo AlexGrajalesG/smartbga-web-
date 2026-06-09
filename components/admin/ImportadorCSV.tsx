@@ -3,25 +3,100 @@
 import { useRef, useState, useTransition } from "react";
 import Papa from "papaparse";
 import { useRouter } from "next/navigation";
-import { UploadCloud, Loader2, CircleCheck, CircleAlert, Download } from "lucide-react";
-import { importarProductosCSV, type FilaCSV, type ResultadoImportacion } from "@/app/(admin)/admin/importar/actions";
+import {
+  UploadCloud, Loader2, CircleCheck, CircleAlert,
+  Download, ChevronDown, ChevronUp,
+} from "lucide-react";
+import {
+  importarProductosCSV,
+  type FilaCSV,
+  type ResultadoImportacion,
+} from "@/app/(admin)/admin/importar/actions";
 
-const PLANTILLA_HEADERS = [
-  "slug", "nombre", "categoria_slug",
-  "precio_contraentrega", "precio_tarjeta", "precio_addi", "precio_sistecredito",
-  "precio_anterior", "stock", "descripcion", "imagenes",
+interface Categoria {
+  slug: string;
+  nombre: string;
+}
+
+const COLUMNAS_GUIA = [
+  { col: "slug",                 req: true,  desc: "Identificador unico del producto. Solo letras minusculas, numeros y guiones. No puede repetirse.",       ej: "camiseta-negra-m" },
+  { col: "nombre",               req: true,  desc: "Nombre visible del producto en la tienda.",                                                              ej: "Camiseta Negra Talla M" },
+  { col: "categoria_slug",       req: false, desc: "Slug de la categoria (ver lista de categorias disponibles abajo). Dejar vacio si no aplica.",            ej: "ropa" },
+  { col: "precio_contraentrega", req: true,  desc: "Precio cuando el cliente paga en efectivo al recibir el pedido. Al menos uno de los cuatro precios es obligatorio.", ej: "35000" },
+  { col: "precio_tarjeta",       req: false, desc: "Precio pagando con tarjeta debito o credito.",                                                           ej: "32000" },
+  { col: "precio_addi",          req: false, desc: "Precio con financiamiento Addi (paga despues).",                                                         ej: "30000" },
+  { col: "precio_sistecredito",  req: false, desc: "Precio con Sistecredito.",                                                                               ej: "28000" },
+  { col: "precio_anterior",      req: false, desc: "Precio antes del descuento. Se muestra tachado. Dejar vacio si no hay descuento.",                       ej: "40000" },
+  { col: "stock",                req: false, desc: "Unidades disponibles. 0 o vacio = agotado.",                                                             ej: "10" },
+  { col: "descripcion",          req: false, desc: "Descripcion del producto. Se recomienda 1-3 oraciones.",                                                 ej: "Camiseta de algodon 100%." },
+  { col: "imagenes",             req: false, desc: "URLs de las fotos separadas por punto y coma (;). Las imagenes deben estar subidas a Cloudinary primero.", ej: "https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/camiseta.jpg" },
 ];
 
-const PLANTILLA_EJEMPLO = [
-  "camiseta-roja-m", "Camiseta Roja Talla M", "ropa",
-  "35000", "32000", "30000", "28000",
-  "40000", "10", "Camiseta de algodon 100%. Color rojo talla M.", "",
+const COLUMNAS_PREVIA: { key: keyof FilaCSV; label: string }[] = [
+  { key: "slug",                 label: "Slug" },
+  { key: "nombre",               label: "Nombre" },
+  { key: "categoria_slug",       label: "Categoria" },
+  { key: "precio_contraentrega", label: "Contraentrega" },
+  { key: "precio_tarjeta",       label: "Tarjeta" },
+  { key: "stock",                label: "Stock" },
 ];
 
-function descargarPlantilla() {
-  const filaHeaders = PLANTILLA_HEADERS.join(",");
-  const filaEjemplo = PLANTILLA_EJEMPLO.map((v) => `"${v}"`).join(",");
-  const blob = new Blob([filaHeaders + "\n" + filaEjemplo], { type: "text/csv;charset=utf-8;" });
+function generarPlantilla(categorias: Categoria[]) {
+  const catEjemplo = categorias[0]?.slug ?? "ropa";
+  const headers = COLUMNAS_GUIA.map((c) => c.col);
+
+  const filaEjemplo1 = [
+    "camiseta-negra-m",
+    "Camiseta Negra Talla M",
+    catEjemplo,
+    "35000", "32000", "", "",
+    "40000", "10",
+    "Camiseta de algodon. Color negro talla M.",
+    "https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/foto1.jpg",
+  ];
+
+  const filaEjemplo2 = [
+    "zapatos-cuero-42",
+    "Zapatos de Cuero Talla 42",
+    categorias[1]?.slug ?? catEjemplo,
+    "120000", "115000", "100000", "95000",
+    "", "5",
+    "Zapatos de cuero genuino. Talla 42.",
+    "https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/zapatos.jpg;https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/zapatos2.jpg",
+  ];
+
+  const filaEjemplo3 = [
+    "pantalon-jean-32",
+    "Pantalon Jean Talla 32",
+    catEjemplo,
+    "55000", "", "", "",
+    "", "0",
+    "",
+    "",
+  ];
+
+  // Separador visual antes de la referencia de categorias
+  const separador = Array(headers.length).fill("");
+  separador[0] = "# CATEGORIAS DISPONIBLES (copia el slug en la columna categoria_slug):";
+
+  const filasCategorias = categorias.map((c) => {
+    const fila = Array(headers.length).fill("");
+    fila[0] = "# " + c.slug;
+    fila[1] = c.nombre;
+    return fila;
+  });
+
+  const lineas = [
+    headers.join(","),
+    filaEjemplo1.map((v) => `"${v}"`).join(","),
+    filaEjemplo2.map((v) => `"${v}"`).join(","),
+    filaEjemplo3.map((v) => `"${v}"`).join(","),
+    ...(categorias.length > 0
+      ? [separador.join(","), ...filasCategorias.map((f) => f.map((v) => `"${v}"`).join(","))]
+      : []),
+  ];
+
+  const blob = new Blob([lineas.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -30,18 +105,7 @@ function descargarPlantilla() {
   URL.revokeObjectURL(url);
 }
 
-const COLUMNAS_PREVIA: { key: keyof FilaCSV; label: string }[] = [
-  { key: "slug", label: "Slug" },
-  { key: "nombre", label: "Nombre" },
-  { key: "categoria_slug", label: "Categoria" },
-  { key: "precio_contraentrega", label: "Contraentrega" },
-  { key: "precio_tarjeta", label: "Tarjeta" },
-  { key: "precio_addi", label: "Addi" },
-  { key: "precio_sistecredito", label: "Sistecredito" },
-  { key: "stock", label: "Stock" },
-];
-
-export default function ImportadorCSV() {
+export default function ImportadorCSV({ categorias }: { categorias: Categoria[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -52,6 +116,7 @@ export default function ImportadorCSV() {
   const [errorImportacion, setErrorImportacion] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
   const [arrastrando, setArrastrando] = useState(false);
+  const [guiaAbierta, setGuiaAbierta] = useState(false);
 
   const procesarArchivo = (file: File) => {
     setArchivo(file);
@@ -63,12 +128,11 @@ export default function ImportadorCSV() {
     Papa.parse<FilaCSV>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (resultados) => {
-        if (resultados.errors.length > 0) {
-          setErrorParseo(resultados.errors[0].message);
-          return;
-        }
-        setFilas(resultados.data);
+      complete: (res) => {
+        if (res.errors.length > 0) { setErrorParseo(res.errors[0].message); return; }
+        // ignorar filas que son comentarios de la plantilla (slug empieza con #)
+        const limpias = res.data.filter((f) => !String(f.slug ?? "").startsWith("#"));
+        setFilas(limpias);
       },
       error: (err) => setErrorParseo(err.message),
     });
@@ -101,7 +165,7 @@ export default function ImportadorCSV() {
     : "border-neutral-200 bg-neutral-50 hover:border-neutral-300";
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-5 max-w-3xl">
 
       {/* Zona de subida */}
       {!archivo && (
@@ -127,36 +191,93 @@ export default function ImportadorCSV() {
                 if (file) procesarArchivo(file);
               }}
             />
-            <UploadCloud
-              size={28}
-              className={arrastrando ? "text-[#8C1A1A]" : "text-neutral-300"}
-            />
+            <UploadCloud size={28} className={arrastrando ? "text-[#8C1A1A]" : "text-neutral-300"} />
             <div>
               <p className="text-sm font-semibold text-neutral-700">
                 {arrastrando ? "Suelta el archivo aqui" : "Arrastra tu CSV aqui"}
               </p>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                o haz clic para seleccionar el archivo
-              </p>
+              <p className="text-xs text-neutral-400 mt-0.5">o haz clic para seleccionar el archivo</p>
             </div>
           </label>
 
-          {/* Banner descarga plantilla */}
+          {/* Descarga plantilla */}
           <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-            <div className="flex flex-col gap-0.5">
-              <p className="text-xs font-semibold text-neutral-700">No sabes el formato?</p>
-              <p className="text-xs text-neutral-400">
-                Descarga la plantilla con las columnas correctas y una fila de ejemplo
+            <div>
+              <p className="text-xs font-semibold text-neutral-700">Descarga la plantilla</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Incluye 3 filas de ejemplo y las categorias disponibles
               </p>
             </div>
             <button
               type="button"
-              onClick={descargarPlantilla}
+              onClick={() => generarPlantilla(categorias)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:border-[#8C1A1A] hover:text-[#8C1A1A] transition-colors cursor-pointer whitespace-nowrap"
             >
               <Download size={13} />
               Plantilla .CSV
             </button>
+          </div>
+
+          {/* Guia de columnas */}
+          <div className="rounded-xl border border-neutral-100 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setGuiaAbierta((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer"
+            >
+              Guia de columnas
+              {guiaAbierta ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+
+            {guiaAbierta && (
+              <div className="divide-y divide-neutral-100">
+                {/* Tabla de columnas */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-neutral-50 text-left text-neutral-400 uppercase tracking-wider">
+                        <th className="px-4 py-2.5 font-bold">Columna</th>
+                        <th className="px-4 py-2.5 font-bold">Req.</th>
+                        <th className="px-4 py-2.5 font-bold">Descripcion</th>
+                        <th className="px-4 py-2.5 font-bold whitespace-nowrap">Ejemplo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100">
+                      {COLUMNAS_GUIA.map((c) => (
+                        <tr key={c.col}>
+                          <td className="px-4 py-2.5 font-mono text-neutral-800 whitespace-nowrap">{c.col}</td>
+                          <td className="px-4 py-2.5">
+                            {c.req
+                              ? <span className="text-[#8C1A1A] font-bold">Si</span>
+                              : <span className="text-neutral-400">No</span>}
+                          </td>
+                          <td className="px-4 py-2.5 text-neutral-500 leading-relaxed">{c.desc}</td>
+                          <td className="px-4 py-2.5 font-mono text-neutral-600 whitespace-nowrap">{c.ej}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Categorias disponibles */}
+                {categorias.length > 0 && (
+                  <div className="px-4 py-4 bg-neutral-50">
+                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                      Categorias disponibles (usa el slug en la columna categoria_slug)
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {categorias.map((c) => (
+                        <div key={c.slug} className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5">
+                          <span className="font-mono text-xs text-neutral-800">{c.slug}</span>
+                          <span className="text-neutral-400 text-xs">—</span>
+                          <span className="text-xs text-neutral-500">{c.nombre}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -173,8 +294,8 @@ export default function ImportadorCSV() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-neutral-600">
               <span className="font-semibold text-neutral-800">{archivo.name}</span>
-              {" "}&mdash; {filas.length}{" "}
-              {filas.length === 1 ? "fila detectada" : "filas detectadas"}
+              {" "}&mdash;{" "}
+              {filas.length} {filas.length === 1 ? "producto detectado" : "productos detectados"}
             </p>
             <button
               type="button"
@@ -207,8 +328,8 @@ export default function ImportadorCSV() {
               </tbody>
             </table>
             {filas.length > 8 && (
-              <p className="px-3 py-2 text-xs text-neutral-400 bg-neutral-50">
-                ... y {filas.length - 8} filas mas
+              <p className="px-3 py-2 text-xs text-neutral-400 bg-neutral-50 border-t border-neutral-100">
+                ... y {filas.length - 8} productos mas
               </p>
             )}
           </div>
@@ -219,17 +340,15 @@ export default function ImportadorCSV() {
             </div>
           )}
 
-          <div>
-            <button
-              type="button"
-              onClick={confirmarImportacion}
-              disabled={pendiente}
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#8C1A1A] hover:bg-[#6B1313] text-white font-semibold rounded-2xl transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {pendiente && <Loader2 size={16} className="animate-spin" />}
-              Importar {filas.length} {filas.length === 1 ? "producto" : "productos"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={confirmarImportacion}
+            disabled={pendiente}
+            className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#8C1A1A] hover:bg-[#6B1313] text-white font-semibold rounded-2xl transition-colors disabled:opacity-50 cursor-pointer w-fit"
+          >
+            {pendiente && <Loader2 size={16} className="animate-spin" />}
+            Importar {filas.length} {filas.length === 1 ? "producto" : "productos"}
+          </button>
         </div>
       )}
 
@@ -244,8 +363,7 @@ export default function ImportadorCSV() {
               <span className="font-semibold">{resultado.actualizados}</span> actualizados
               {resultado.errores.length > 0 && (
                 <>, <span className="font-semibold">{resultado.errores.length}</span> con errores</>
-              )}
-              .
+              )}.
             </p>
           </div>
 
@@ -257,23 +375,19 @@ export default function ImportadorCSV() {
               </p>
               <ul className="flex flex-col gap-1 text-xs text-amber-800">
                 {resultado.errores.map((e, idx) => (
-                  <li key={idx}>
-                    Fila {e.fila}: {e.mensaje}
-                  </li>
+                  <li key={idx}>Fila {e.fila}: {e.mensaje}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          <div>
-            <button
-              type="button"
-              onClick={reiniciar}
-              className="px-6 py-3 text-sm font-semibold text-[#8C1A1A] hover:underline cursor-pointer"
-            >
-              Importar otro archivo
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={reiniciar}
+            className="px-6 py-3 text-sm font-semibold text-[#8C1A1A] hover:underline cursor-pointer w-fit"
+          >
+            Importar otro archivo
+          </button>
         </div>
       )}
     </div>
