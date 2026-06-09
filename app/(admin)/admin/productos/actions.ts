@@ -52,6 +52,8 @@ function datosComunes(formData: FormData, empleado: Empleado) {
     imagenes = [];
   }
 
+  const video_url = String(formData.get("video_url") ?? "").trim() || null;
+
   // Un proveedor solo puede publicar a su propio nombre — no puede elegir otro proveedor
   const proveedor_id =
     empleado.rol === "admin"
@@ -69,6 +71,7 @@ function datosComunes(formData: FormData, empleado: Empleado) {
     stock,
     descripcion,
     imagenes,
+    video_url,
   };
 }
 

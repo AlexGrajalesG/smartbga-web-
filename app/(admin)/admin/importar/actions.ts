@@ -48,6 +48,7 @@ export interface FilaCSV {
   stock?: string;
   descripcion?: string;
   imagenes?: string;
+  video_url?: string;
 }
 
 interface ErrorFila {
@@ -153,6 +154,8 @@ export async function importarProductosCSV(filas: FilaCSV[]): Promise<ResultadoI
       .map((u) => u.trim())
       .filter((u) => u !== "");
 
+    const video_url = (fila.video_url ?? "").trim() || null;
+
     slugsVistos.add(slug);
     filasValidas.push({
       slug,
@@ -164,6 +167,7 @@ export async function importarProductosCSV(filas: FilaCSV[]): Promise<ResultadoI
       stock,
       descripcion: (fila.descripcion ?? "").trim() || null,
       imagenes,
+      video_url,
       proveedor_id: empleado!.rol === "admin" ? null : empleado!.proveedor_id,
       activo: true,
     });

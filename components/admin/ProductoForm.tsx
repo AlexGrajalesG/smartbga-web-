@@ -135,6 +135,16 @@ export default function ProductoForm({ producto, categorias, proveedores, esAdmi
             className="input resize-y"
           />
         </Campo>
+
+        <Campo label="Video (Instagram o TikTok)" hint="Pega el link del reel o video del producto — se mostrará en la página">
+          <input
+            name="video_url"
+            type="url"
+            defaultValue={producto?.video_url ?? ""}
+            placeholder="https://www.instagram.com/reel/... o https://www.tiktok.com/..."
+            className="input"
+          />
+        </Campo>
       </fieldset>
 
       {/* Precio y stock */}
