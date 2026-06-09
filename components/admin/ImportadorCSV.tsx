@@ -36,8 +36,6 @@ const HEADERS_AMIGABLES = [
   "descripcion",
   "unidades",
   "precio",
-  "precio_tarjeta",
-  "precio_addi",
   "precio_anterior",
   "fotos",
 ];
@@ -48,10 +46,8 @@ const COLUMNAS_GUIA = [
   { col: "categoria",       req: false, desc: "Slug de la categoria. Ver la lista de categorias disponibles abajo.",                                            ej: "belleza-cuidado-personal" },
   { col: "descripcion",     req: false, desc: "Descripcion del producto. Se recomienda 1-3 oraciones.",                                                         ej: "Crema hidratante para uso diario." },
   { col: "unidades",        req: false, desc: "Cantidad disponible. 0 o vacio = agotado.",                                                                      ej: "10" },
-  { col: "precio",          req: true,  desc: "Precio de venta principal (pago en efectivo / contraentrega). Al menos este campo es obligatorio.",              ej: "35000" },
-  { col: "precio_tarjeta",  req: false, desc: "Precio pagando con tarjeta debito o credito. Dejar vacio para usar el mismo precio.",                            ej: "32000" },
-  { col: "precio_addi",     req: false, desc: "Precio con financiamiento Addi. Dejar vacio si no aplica.",                                                      ej: "30000" },
-  { col: "precio_anterior", req: false, desc: "Precio antes del descuento. Se muestra tachado. Dejar vacio si no hay descuento.",                               ej: "40000" },
+  { col: "precio",          req: true,  desc: "Precio de venta del producto.",                                          ej: "35000" },
+  { col: "precio_anterior", req: false, desc: "Precio antes del descuento. Se muestra tachado. Dejar vacio si no hay descuento.", ej: "40000" },
   { col: "fotos",           req: false, desc: "URL de la foto del producto (sube las fotos en el Paso 1 y pega la URL aqui). Para varias fotos separalas con ;", ej: "https://res.cloudinary.com/.../foto.jpg" },
 ];
 
@@ -64,18 +60,28 @@ const COLUMNAS_PREVIA: { key: keyof FilaCSV; label: string }[] = [
   { key: "imagenes",             label: "Fotos" },
 ];
 
+// Calcula precio con porcentaje adicional, redondeado a centenas
+function conRecargo(base: number, pct: number): string {
+  return String(Math.round((base * (1 + pct / 100)) / 100) * 100);
+}
+
 // Transforma una fila con nombres amigables a FilaCSV (nombres internos)
+// Si no vienen precio_tarjeta/addi/sistecredito, los calcula automaticamente:
+//   tarjeta +3%, addi +12%, sistecredito +25%
 function normalizarFila(raw: Record<string, string>): FilaCSV {
   const nombre = (raw.nombre ?? "").trim();
   const slug = (raw.slug ?? "").trim() || slugify(nombre);
+  const precioBase = Number((raw.precio ?? raw.precio_contraentrega ?? "").replace(/\D/g, ""));
+  const tieneBase = precioBase > 0;
+
   return {
     slug,
     nombre,
     categoria_slug: raw.categoria ?? raw.categoria_slug,
     precio_contraentrega: raw.precio ?? raw.precio_contraentrega,
-    precio_tarjeta: raw.precio_tarjeta,
-    precio_addi: raw.precio_addi,
-    precio_sistecredito: raw.precio_sistecredito,
+    precio_tarjeta:      raw.precio_tarjeta      || (tieneBase ? conRecargo(precioBase, 3)  : ""),
+    precio_addi:         raw.precio_addi         || (tieneBase ? conRecargo(precioBase, 12) : ""),
+    precio_sistecredito: raw.precio_sistecredito || (tieneBase ? conRecargo(precioBase, 25) : ""),
     precio_anterior: raw.precio_anterior,
     stock: raw.unidades ?? raw.stock,
     descripcion: raw.descripcion,
@@ -94,9 +100,9 @@ function generarPlantilla(categorias: Categoria[]) {
   const cat1 = categorias[0]?.slug ?? "";
 
   const ejemplos = [
-    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario.", "10", "35000", "",      "", "40000", ""],
-    ["Shampoo Anticaspa 400ml",    cat1, "",                    "5",  "22000", "20000", "", "",      ""],
-    ["Mascarilla Facial Vitamina", cat1, "",                    "0",  "18000", "",      "", "25000", ""],
+    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario.", "10", "35000", "40000", ""],
+    ["Shampoo Anticaspa 400ml",    cat1, "",                    "5",  "22000", "",      ""],
+    ["Mascarilla Facial Vitamina", cat1, "",                    "0",  "18000", "25000", ""],
   ];
 
   const lineas: string[] = [HEADERS_AMIGABLES.join(SEP)];
