@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { ImagePlus, Loader2, Copy, Check, X, AlertCircle } from "lucide-react";
+import { useRef, useState, useTransition, useEffect } from "react";
+import { ImagePlus, Loader2, Copy, Check, X, AlertCircle, Clipboard } from "lucide-react";
 import { subirImagenesImportador } from "@/app/(admin)/admin/importar/actions";
 
 interface ImagenSubida {
@@ -16,6 +16,28 @@ export default function UploadImagenesImportador() {
   const [errores, setErrores] = useState<string[]>([]);
   const [pendiente, startTransition] = useTransition();
   const [arrastrando, setArrastrando] = useState(false);
+  const [pegado, setPegado] = useState(false);
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const imageFiles = Array.from(items)
+        .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+        .map((item) => item.getAsFile())
+        .filter((f): f is File => f !== null);
+      if (imageFiles.length === 0) return;
+      e.preventDefault();
+      const dt = new DataTransfer();
+      imageFiles.forEach((f) => dt.items.add(f));
+      setPegado(true);
+      setTimeout(() => setPegado(false), 1500);
+      subirArchivos(dt.files);
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const subirArchivos = (archivos: FileList | null) => {
     if (!archivos || archivos.length === 0) return;
@@ -86,12 +108,20 @@ export default function UploadImagenesImportador() {
         />
         {pendiente ? (
           <Loader2 size={20} className="text-[#8C1A1A] animate-spin" />
+        ) : pegado ? (
+          <Clipboard size={20} className="text-[#8C1A1A]" />
         ) : (
           <ImagePlus size={20} className={arrastrando ? "text-[#8C1A1A]" : "text-neutral-300"} />
         )}
         <div>
           <p className="text-sm font-semibold text-neutral-700">
-            {pendiente ? "Subiendo..." : arrastrando ? "Suelta las imagenes aqui" : "Arrastra las fotos aqui"}
+            {pendiente
+              ? "Subiendo..."
+              : pegado
+              ? "Imagen pegada, subiendo..."
+              : arrastrando
+              ? "Suelta las imagenes aqui"
+              : "Arrastra, pega (Ctrl+V) o haz clic"}
           </p>
           <p className="text-xs text-neutral-400 mt-0.5">
             JPG, PNG, WebP — hasta 20 imagenes a la vez
