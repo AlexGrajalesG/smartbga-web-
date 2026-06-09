@@ -41,62 +41,60 @@ const COLUMNAS_PREVIA: { key: keyof FilaCSV; label: string }[] = [
   { key: "stock",                label: "Stock" },
 ];
 
+function csvFila(valores: string[]): string {
+  return valores.map((v) => `"${v.replace(/"/g, '""')}"`).join(",");
+}
+
 function generarPlantilla(categorias: Categoria[]) {
-  const catEjemplo = categorias[0]?.slug ?? "ropa";
+  const cat1 = categorias[0]?.slug ?? "";
+  const cat2 = categorias[1]?.slug ?? cat1;
   const headers = COLUMNAS_GUIA.map((c) => c.col);
 
-  const filaEjemplo1 = [
-    "camiseta-negra-m",
-    "Camiseta Negra Talla M",
-    catEjemplo,
-    "35000", "32000", "", "",
-    "40000", "10",
-    "Camiseta de algodon. Color negro talla M.",
-    "https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/foto1.jpg",
+  // 3 filas de ejemplo — una imagen por producto (sin punto y coma) para evitar confusion
+  const ejemplos = [
+    [
+      "producto-uno",
+      "Nombre del Producto 1",
+      cat1,
+      "35000", "32000", "30000", "28000",
+      "40000", "10",
+      "Descripcion corta del producto.",
+      "https://res.cloudinary.com/dknjydn9k/image/upload/v1/foto.jpg",
+    ],
+    [
+      "producto-dos",
+      "Nombre del Producto 2",
+      cat2,
+      "80000", "", "", "",
+      "", "5",
+      "Descripcion opcional.",
+      "",
+    ],
+    [
+      "producto-tres-agotado",
+      "Nombre del Producto 3 (agotado)",
+      cat1,
+      "25000", "22000", "", "",
+      "30000", "0",
+      "",
+      "",
+    ],
   ];
 
-  const filaEjemplo2 = [
-    "zapatos-cuero-42",
-    "Zapatos de Cuero Talla 42",
-    categorias[1]?.slug ?? catEjemplo,
-    "120000", "115000", "100000", "95000",
-    "", "5",
-    "Zapatos de cuero genuino. Talla 42.",
-    "https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/zapatos.jpg;https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/zapatos2.jpg",
-  ];
+  const lineas: string[] = [headers.join(",")];
+  for (const fila of ejemplos) lineas.push(csvFila(fila));
 
-  const filaEjemplo3 = [
-    "pantalon-jean-32",
-    "Pantalon Jean Talla 32",
-    catEjemplo,
-    "55000", "", "", "",
-    "", "0",
-    "",
-    "",
-  ];
+  // Referencia de categorias al final — una por linea, solo las dos primeras columnas
+  if (categorias.length > 0) {
+    lineas.push("");
+    lineas.push(csvFila(["CATEGORIAS DISPONIBLES — copia el slug en la columna categoria_slug", ""]));
+    for (const c of categorias) {
+      lineas.push(csvFila([c.slug, c.nombre]));
+    }
+  }
 
-  // Separador visual antes de la referencia de categorias
-  const separador = Array(headers.length).fill("");
-  separador[0] = "# CATEGORIAS DISPONIBLES (copia el slug en la columna categoria_slug):";
-
-  const filasCategorias = categorias.map((c) => {
-    const fila = Array(headers.length).fill("");
-    fila[0] = "# " + c.slug;
-    fila[1] = c.nombre;
-    return fila;
-  });
-
-  const lineas = [
-    headers.join(","),
-    filaEjemplo1.map((v) => `"${v}"`).join(","),
-    filaEjemplo2.map((v) => `"${v}"`).join(","),
-    filaEjemplo3.map((v) => `"${v}"`).join(","),
-    ...(categorias.length > 0
-      ? [separador.join(","), ...filasCategorias.map((f) => f.map((v) => `"${v}"`).join(","))]
-      : []),
-  ];
-
-  const blob = new Blob([lineas.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const bom = "﻿"; // UTF-8 BOM para que Excel reconozca tildes
+  const blob = new Blob([bom + lineas.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
