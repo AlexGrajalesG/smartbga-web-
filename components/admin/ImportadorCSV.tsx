@@ -3,17 +3,41 @@
 import { useRef, useState, useTransition } from "react";
 import Papa from "papaparse";
 import { useRouter } from "next/navigation";
-import { UploadCloud, Loader2, CircleCheck, CircleAlert } from "lucide-react";
+import { UploadCloud, Loader2, CircleCheck, CircleAlert, Download } from "lucide-react";
 import { importarProductosCSV, type FilaCSV, type ResultadoImportacion } from "@/app/(admin)/admin/importar/actions";
+
+const PLANTILLA_HEADERS = [
+  "slug", "nombre", "categoria_slug",
+  "precio_contraentrega", "precio_tarjeta", "precio_addi", "precio_sistecredito",
+  "precio_anterior", "stock", "descripcion", "imagenes",
+];
+
+const PLANTILLA_EJEMPLO = [
+  "camiseta-roja-m", "Camiseta Roja Talla M", "ropa",
+  "35000", "32000", "30000", "28000",
+  "40000", "10", "Camiseta de algodon 100%. Color rojo talla M.", "",
+];
+
+function descargarPlantilla() {
+  const filaHeaders = PLANTILLA_HEADERS.join(",");
+  const filaEjemplo = PLANTILLA_EJEMPLO.map((v) => `"${v}"`).join(",");
+  const blob = new Blob([filaHeaders + "\n" + filaEjemplo], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "plantilla-smartbga.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const COLUMNAS_PREVIA: { key: keyof FilaCSV; label: string }[] = [
   { key: "slug", label: "Slug" },
   { key: "nombre", label: "Nombre" },
-  { key: "categoria_slug", label: "Categoría" },
+  { key: "categoria_slug", label: "Categoria" },
   { key: "precio_contraentrega", label: "Contraentrega" },
   { key: "precio_tarjeta", label: "Tarjeta" },
   { key: "precio_addi", label: "Addi" },
-  { key: "precio_sistecredito", label: "Sistecrédito" },
+  { key: "precio_sistecredito", label: "Sistecredito" },
   { key: "stock", label: "Stock" },
 ];
 
@@ -27,6 +51,7 @@ export default function ImportadorCSV() {
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null);
   const [errorImportacion, setErrorImportacion] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
+  const [arrastrando, setArrastrando] = useState(false);
 
   const procesarArchivo = (file: File) => {
     setArchivo(file);
@@ -71,29 +96,69 @@ export default function ImportadorCSV() {
     if (inputRef.current) inputRef.current.value = "";
   };
 
+  const claseZona = arrastrando
+    ? "border-[#8C1A1A] bg-[#8C1A1A]/5"
+    : "border-neutral-200 bg-neutral-50 hover:border-neutral-300";
+
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
+
+      {/* Zona de subida */}
       {!archivo && (
-        <label className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 px-6 py-12 text-center cursor-pointer hover:border-neutral-300 transition-colors">
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
+        <div className="flex flex-col gap-3">
+          <label
+            className={"flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center cursor-pointer transition-colors " + claseZona}
+            onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
+            onDragLeave={() => setArrastrando(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setArrastrando(false);
+              const file = e.dataTransfer.files[0];
               if (file) procesarArchivo(file);
             }}
-          />
-          <UploadCloud size={22} className="text-neutral-400" />
-          <p className="text-sm text-neutral-600">
-            <span className="font-semibold text-[#8C1A1A]">Haz clic para subir</span> tu archivo CSV
-          </p>
-          <p className="text-xs text-neutral-400">
-            Columnas: slug, nombre, categoria_slug, precio_contraentrega, precio_tarjeta, precio_addi,
-            precio_sistecredito, precio_anterior, stock, descripcion, imagenes (URLs separadas por “;”)
-          </p>
-        </label>
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) procesarArchivo(file);
+              }}
+            />
+            <UploadCloud
+              size={28}
+              className={arrastrando ? "text-[#8C1A1A]" : "text-neutral-300"}
+            />
+            <div>
+              <p className="text-sm font-semibold text-neutral-700">
+                {arrastrando ? "Suelta el archivo aqui" : "Arrastra tu CSV aqui"}
+              </p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                o haz clic para seleccionar el archivo
+              </p>
+            </div>
+          </label>
+
+          {/* Banner descarga plantilla */}
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
+            <div className="flex flex-col gap-0.5">
+              <p className="text-xs font-semibold text-neutral-700">No sabes el formato?</p>
+              <p className="text-xs text-neutral-400">
+                Descarga la plantilla con las columnas correctas y una fila de ejemplo
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={descargarPlantilla}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:border-[#8C1A1A] hover:text-[#8C1A1A] transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Download size={13} />
+              Plantilla .CSV
+            </button>
+          </div>
+        </div>
       )}
 
       {errorParseo && (
@@ -102,11 +167,13 @@ export default function ImportadorCSV() {
         </div>
       )}
 
+      {/* Vista previa */}
       {archivo && filas.length > 0 && !resultado && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-neutral-600">
-              <span className="font-semibold text-neutral-800">{archivo.name}</span> — {filas.length}{" "}
+              <span className="font-semibold text-neutral-800">{archivo.name}</span>
+              {" "}&mdash; {filas.length}{" "}
               {filas.length === 1 ? "fila detectada" : "filas detectadas"}
             </p>
             <button
@@ -141,7 +208,7 @@ export default function ImportadorCSV() {
             </table>
             {filas.length > 8 && (
               <p className="px-3 py-2 text-xs text-neutral-400 bg-neutral-50">
-                … y {filas.length - 8} filas más
+                ... y {filas.length - 8} filas mas
               </p>
             )}
           </div>
@@ -166,12 +233,14 @@ export default function ImportadorCSV() {
         </div>
       )}
 
+      {/* Resultado */}
       {resultado && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-2xl border border-green-100 bg-green-50 px-5 py-4">
             <CircleCheck size={20} className="text-green-600 shrink-0" />
             <p className="text-sm text-green-800">
-              Importación completa — <span className="font-semibold">{resultado.creados}</span> creados,{" "}
+              Importacion completa &mdash;{" "}
+              <span className="font-semibold">{resultado.creados}</span> creados,{" "}
               <span className="font-semibold">{resultado.actualizados}</span> actualizados
               {resultado.errores.length > 0 && (
                 <>, <span className="font-semibold">{resultado.errores.length}</span> con errores</>
