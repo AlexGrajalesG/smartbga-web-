@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCarrito } from "@/lib/store/carrito";
+import { useNotificacionCarrito } from "@/lib/store/notificacion-carrito";
 import { ShoppingBag, Check, Minus, Plus, MessageCircle, Star, Zap, Wallet } from "lucide-react";
 import BotonFavorito from "./BotonFavorito";
 import type { Producto, NivelPrecio } from "@/types";
@@ -24,6 +25,7 @@ export default function PanelCompra({ producto }: { producto: Producto }) {
   const agregar = useCarrito((s) => s.agregar);
   const actualizarCantidad = useCarrito((s) => s.actualizarCantidad);
   const items = useCarrito((s) => s.items);
+  const mostrarNotificacion = useNotificacionCarrito((s) => s.mostrar);
 
   const [cantidad, setCantidad] = useState(1);
   const [agregado, setAgregado] = useState(false);
@@ -43,6 +45,7 @@ export default function PanelCompra({ producto }: { producto: Producto }) {
     } else {
       for (let i = 0; i < cantidad; i++) agregar(producto);
     }
+    mostrarNotificacion(producto);
     setAgregado(true);
     setTimeout(() => setAgregado(false), 2500);
   };
@@ -235,23 +238,45 @@ export default function PanelCompra({ producto }: { producto: Producto }) {
           {/* Botón agregar */}
           <button
             onClick={handleAgregar}
-            className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 cursor-pointer active:scale-[0.97] shadow-lg ${
+            className={`w-full py-4 rounded-2xl font-bold text-base cursor-pointer active:scale-[0.97] relative overflow-hidden shadow-lg motion-safe:transition-[background-color,box-shadow] motion-safe:duration-300 ${
               agregado
                 ? "bg-green-600 text-white shadow-green-200"
                 : "bg-[#8C1A1A] hover:bg-[#6B1313] text-white shadow-[#8C1A1A]/20 hover:shadow-[#8C1A1A]/30"
             }`}
           >
-            {agregado ? (
-              <>
-                <Check size={20} strokeWidth={2.5} />
-                ¡Agregado al carrito!
-              </>
-            ) : (
-              <>
-                <ShoppingBag size={20} strokeWidth={2} />
-                Agregar al carrito
-              </>
-            )}
+            {/* Estado: no agregado */}
+            <span
+              className="absolute inset-0 flex items-center justify-center gap-3 motion-safe:transition-[opacity,filter,transform] motion-safe:duration-200"
+              style={{
+                opacity: agregado ? 0 : 1,
+                filter: agregado ? "blur(4px)" : "blur(0px)",
+                transform: agregado ? "scale(0.85)" : "scale(1)",
+              }}
+              aria-hidden={agregado}
+            >
+              <ShoppingBag size={20} strokeWidth={2} />
+              Agregar al carrito
+            </span>
+
+            {/* Estado: agregado */}
+            <span
+              className="absolute inset-0 flex items-center justify-center gap-3 motion-safe:transition-[opacity,filter,transform] motion-safe:duration-200"
+              style={{
+                opacity: agregado ? 1 : 0,
+                filter: agregado ? "blur(0px)" : "blur(4px)",
+                transform: agregado ? "scale(1)" : "scale(0.85)",
+              }}
+              aria-hidden={!agregado}
+            >
+              <Check size={20} strokeWidth={2.5} />
+              ¡Agregado al carrito!
+            </span>
+
+            {/* Espaciador invisible */}
+            <span className="invisible flex items-center justify-center gap-3" aria-hidden>
+              <ShoppingBag size={20} strokeWidth={2} />
+              Agregar al carrito
+            </span>
           </button>
 
           {/* Botón Instagram + Favorito */}

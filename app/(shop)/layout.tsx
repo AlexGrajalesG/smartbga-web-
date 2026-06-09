@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEmpleadoActual, puedeGestionarCatalogo } from '@/lib/auth/empleado'
 import Navbar from '@/components/ui/Navbar'
 import Footer from '@/components/ui/Footer'
+import NotificacionCarrito from '@/components/ui/NotificacionCarrito'
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -13,6 +14,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <Navbar user={user} mostrarPanelAdmin={mostrarPanelAdmin} />
       <main className="flex-1">{children}</main>
       <Footer />
+      <NotificacionCarrito />
     </>
   )
 }

@@ -1,14 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import type { Producto } from "@/types";
 import { useCarrito } from "@/lib/store/carrito";
 import BotonFavorito from "./BotonFavorito";
 
 export default function ProductoCard({ producto }: { producto: Producto }) {
   const agregar = useCarrito((s) => s.agregar);
+  const [agregado, setAgregado] = useState(false);
   const imagen = producto.imagenes?.[0] ?? "/placeholder.png";
+
+  const handleAgregar = () => {
+    agregar(producto);
+    setAgregado(true);
+    setTimeout(() => setAgregado(false), 2000);
+  };
   const tieneDescuento = producto.precio_anterior && producto.precio_anterior > producto.precio_venta;
 
   return (
@@ -68,11 +77,19 @@ export default function ProductoCard({ producto }: { producto: Producto }) {
         </div>
 
         <button
-          onClick={() => agregar(producto)}
-          disabled={producto.stock === 0}
-          className="mt-1 w-full text-xs font-semibold py-2.5 rounded-xl border-2 border-[#111111] text-[#111111] hover:bg-[#8C1A1A] hover:border-[#8C1A1A] hover:text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          onClick={handleAgregar}
+          disabled={producto.stock === 0 || agregado}
+          className={`mt-1 w-full text-xs font-semibold py-2.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed ${
+            producto.stock === 0
+              ? "border-neutral-200 text-neutral-400 opacity-40"
+              : agregado
+              ? "border-green-600 bg-green-600 text-white"
+              : "border-[#111111] text-[#111111] hover:bg-[#8C1A1A] hover:border-[#8C1A1A] hover:text-white"
+          }`}
         >
-          {producto.stock === 0 ? "Agotado" : "Agregar al carrito"}
+          {agregado ? (
+            <><Check size={12} strokeWidth={3} /> Agregado</>
+          ) : producto.stock === 0 ? "Agotado" : "Agregar al carrito"}
         </button>
       </div>
     </div>

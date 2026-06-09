@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getEmpleadoActual } from "@/lib/auth/empleado";
-import { Package, PackageX, Tag, ArrowRight } from "lucide-react";
+import { Package, PackageX, Tag, ArrowRight, ShoppingBag } from "lucide-react";
 
 export default async function AdminDashboardPage() {
   const empleado = await getEmpleadoActual();
@@ -14,14 +14,19 @@ export default async function AdminDashboardPage() {
   }
   const { data: productos } = await query;
 
-  const activos = productos?.filter((p) => p.activo).length ?? 0;
+  const activos  = productos?.filter((p) => p.activo).length ?? 0;
   const agotados = productos?.filter((p) => p.activo && p.stock === 0).length ?? 0;
-  const total = productos?.length ?? 0;
+  const total    = productos?.length ?? 0;
+
+  const { count: ordenesPendientes } = esAdmin
+    ? await createAdminClient().from("ordenes").select("id", { count: "exact", head: true }).eq("estado", "pendiente")
+    : { count: 0 };
 
   const TARJETAS = [
-    { label: "Productos activos", valor: activos, icon: Package },
-    { label: "Agotados", valor: agotados, icon: PackageX },
-    { label: "Total en catálogo", valor: total, icon: Tag },
+    { label: "Órdenes pendientes", valor: ordenesPendientes ?? 0, icon: ShoppingBag, href: "/admin/ordenes?estado=pendiente", highlight: (ordenesPendientes ?? 0) > 0 },
+    { label: "Productos activos",  valor: activos,                icon: Package,     href: undefined, highlight: false },
+    { label: "Agotados",           valor: agotados,               icon: PackageX,    href: undefined, highlight: agotados > 0 },
+    { label: "Total en catálogo",  valor: total,                  icon: Tag,         href: undefined, highlight: false },
   ];
 
   return (
@@ -35,16 +40,23 @@ export default async function AdminDashboardPage() {
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {TARJETAS.map(({ label, valor, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-neutral-100 bg-neutral-50 p-5">
-            <div className="w-9 h-9 rounded-xl bg-[#8C1A1A]/8 flex items-center justify-center mb-3">
-              <Icon size={17} className="text-[#8C1A1A]" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {TARJETAS.map(({ label, valor, icon: Icon, href, highlight }) => {
+          const inner = (
+            <div className={`rounded-2xl border p-5 h-full transition-colors ${highlight ? "border-[#8C1A1A]/30 bg-[#8C1A1A]/[0.03]" : "border-neutral-100 bg-neutral-50"} ${href ? "hover:border-[#8C1A1A]/50 cursor-pointer" : ""}`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${highlight ? "bg-[#8C1A1A]/10" : "bg-[#8C1A1A]/8"}`}>
+                <Icon size={17} className="text-[#8C1A1A]" />
+              </div>
+              <p className={`text-2xl font-bold ${highlight ? "text-[#8C1A1A]" : "text-neutral-900"}`}>{valor}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{label}</p>
             </div>
-            <p className="text-2xl font-bold text-neutral-900">{valor}</p>
-            <p className="text-xs text-neutral-500">{label}</p>
-          </div>
-        ))}
+          );
+          return href ? (
+            <Link key={label} href={href}>{inner}</Link>
+          ) : (
+            <div key={label}>{inner}</div>
+          );
+        })}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">

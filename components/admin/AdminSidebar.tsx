@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Tag, Upload, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Package, Tag, Upload, ArrowLeft, ShoppingBag } from "lucide-react";
 import type { Empleado } from "@/types";
 
 const ENLACES = [
-  { href: "/admin", label: "Resumen", icon: LayoutDashboard, soloAdmin: false, exact: true },
-  { href: "/admin/productos", label: "Productos", icon: Package, soloAdmin: false, exact: false },
-  { href: "/admin/categorias", label: "Categorías", icon: Tag, soloAdmin: true, exact: false },
-  { href: "/admin/importar", label: "Importar catálogo", icon: Upload, soloAdmin: false, exact: false },
+  { href: "/admin",           label: "Resumen",           icon: LayoutDashboard, soloAdmin: false, exact: true  },
+  { href: "/admin/ordenes",   label: "Órdenes",            icon: ShoppingBag,     soloAdmin: true,  exact: false },
+  { href: "/admin/productos", label: "Productos",          icon: Package,         soloAdmin: false, exact: false },
+  { href: "/admin/categorias",label: "Categorías",         icon: Tag,             soloAdmin: true,  exact: false },
+  { href: "/admin/importar",  label: "Importar catálogo",  icon: Upload,          soloAdmin: false, exact: false },
 ];
 
 export default function AdminSidebar({ empleado }: { empleado: Empleado }) {
