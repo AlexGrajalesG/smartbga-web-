@@ -99,6 +99,7 @@ export async function crearProducto(formData: FormData): Promise<{ id: string }>
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/productos");
+  revalidatePath("/", "layout"); // invalida el cache de queries en toda la app
   return { id: data.id };
 }
 
@@ -115,6 +116,7 @@ export async function actualizarProducto(productoId: string, formData: FormData)
   revalidatePath("/admin/productos");
   revalidatePath(`/admin/productos/${productoId}`);
   revalidatePath(`/producto/${datos.slug}`);
+  revalidatePath("/", "layout");
 }
 
 export async function subirImagenesProducto(formData: FormData): Promise<{ urls: string[] }> {

@@ -5,13 +5,13 @@ import "./globals.css";
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600"], // solo los pesos usados en headings
 });
 
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-body",
-  weight: ["300", "400", "500", "600", "700"],
+  // sin weight = variable font: un solo archivo cubre todo el rango
 });
 
 export const metadata: Metadata = {

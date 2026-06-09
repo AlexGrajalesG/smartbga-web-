@@ -204,7 +204,7 @@ export default async function HomePage() {
                 className="animate-fade-up"
                 style={{ animationDelay: `${i * 0.07}s`, opacity: 0 }}
               >
-                <ProductoCard producto={p} />
+                <ProductoCard producto={p} priority={i < 4} />
               </div>
             ))}
           </div>
