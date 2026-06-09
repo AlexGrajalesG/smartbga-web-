@@ -64,6 +64,15 @@ export interface ResultadoImportacion {
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+function slugify(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function numeroOpcional(texto: string | undefined): number | null | undefined {
   const limpio = (texto ?? "").trim();
   if (limpio === "") return null;
@@ -79,8 +88,43 @@ export async function importarProductosCSV(filas: FilaCSV[]): Promise<ResultadoI
 
   const admin = createAdminClient();
 
-  const { data: categorias } = await admin.from("categorias").select("id, slug");
-  const categoriaPorSlug = new Map((categorias ?? []).map((c) => [c.slug, c.id as string]));
+  const { data: catExistentes } = await admin.from("categorias").select("id, slug, nombre");
+  const categoriaPorSlug = new Map((catExistentes ?? []).map((c) => [c.slug, c.id as string]));
+  // También indexar por nombre normalizado para matching flexible
+  const categoriaPorNombre = new Map(
+    (catExistentes ?? []).map((c) => [slugify(c.nombre), c.id as string])
+  );
+
+  // Pre-crear categorías desconocidas que aparecen en el CSV
+  const catsEnCSV = new Set(
+    filas.map((f) => (f.categoria_slug ?? "").trim()).filter(Boolean)
+  );
+  for (const catRaw of catsEnCSV) {
+    const catSlug = slugify(catRaw);
+    if (!categoriaPorSlug.has(catSlug) && !categoriaPorSlug.has(catRaw)) {
+      // Intentar match por nombre primero
+      const idPorNombre = categoriaPorNombre.get(catSlug);
+      if (idPorNombre) {
+        categoriaPorSlug.set(catRaw, idPorNombre);
+        categoriaPorSlug.set(catSlug, idPorNombre);
+      } else {
+        // Crear la categoría automáticamente
+        const nombre = catRaw
+          .split(/[\s-]+/)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        const { data: nueva } = await admin
+          .from("categorias")
+          .insert({ slug: catSlug, nombre, descripcion: null })
+          .select("id")
+          .single();
+        if (nueva) {
+          categoriaPorSlug.set(catRaw, nueva.id);
+          categoriaPorSlug.set(catSlug, nueva.id);
+        }
+      }
+    }
+  }
 
   const errores: ErrorFila[] = [];
   const filasValidas: Record<string, unknown>[] = [];
@@ -107,14 +151,11 @@ export async function importarProductosCSV(filas: FilaCSV[]): Promise<ResultadoI
     }
 
     let categoria_id: string | null = null;
-    const categoriaSlug = (fila.categoria_slug ?? "").trim().toLowerCase();
-    if (categoriaSlug) {
-      const id = categoriaPorSlug.get(categoriaSlug);
-      if (!id) {
-        agregarError(`Categoría desconocida: "${categoriaSlug}"`);
-        return;
-      }
-      categoria_id = id;
+    const categoriaRaw = (fila.categoria_slug ?? "").trim();
+    if (categoriaRaw) {
+      const id = categoriaPorSlug.get(categoriaRaw) ?? categoriaPorSlug.get(slugify(categoriaRaw));
+      categoria_id = id ?? null;
+      // Si aun no se encontro (fallo la creacion), continua sin categoria
     }
 
     const precios: Record<string, number> = {};
