@@ -84,13 +84,13 @@ function generarPlantilla(categorias: Categoria[]) {
   const lineas: string[] = [headers.join(",")];
   for (const fila of ejemplos) lineas.push(csvFila(fila));
 
-  // Referencia de categorias al final — una por linea, solo las dos primeras columnas
+  // Categorias en una sola fila: columna A = etiqueta, resto = slugs
   if (categorias.length > 0) {
     lineas.push("");
-    lineas.push(csvFila(["CATEGORIAS DISPONIBLES — copia el slug en la columna categoria_slug", ""]));
-    for (const c of categorias) {
-      lineas.push(csvFila([c.slug, c.nombre]));
-    }
+    const filaCats = ["CATEGORIAS (copia el slug en categoria_slug):", ...categorias.map((c) => c.slug)];
+    lineas.push(filaCats.map((v) => `"${v}"`).join(","));
+    const filaNombres = ["Nombres de referencia:", ...categorias.map((c) => c.nombre)];
+    lineas.push(filaNombres.map((v) => `"${v}"`).join(","));
   }
 
   const bom = "﻿"; // UTF-8 BOM para que Excel reconozca tildes

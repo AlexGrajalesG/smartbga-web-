@@ -1,4 +1,5 @@
 import ImportadorCSV from "@/components/admin/ImportadorCSV";
+import UploadImagenesImportador from "@/components/admin/UploadImagenesImportador";
 import { createAdminClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
@@ -12,7 +13,7 @@ export default async function ImportarCatalogoPage() {
     .order("nombre");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div>
         <p className="text-xs font-bold tracking-widest text-[#8C1A1A] uppercase mb-1">Catalogo</p>
         <h1 className="font-display text-3xl font-semibold text-[#1C0A0A]">Importar catalogo</h1>
@@ -22,7 +23,29 @@ export default async function ImportarCatalogoPage() {
         </p>
       </div>
 
-      <ImportadorCSV categorias={categorias ?? []} />
+      {/* Paso 1: subir imagenes y obtener URLs */}
+      <section className="flex flex-col gap-3 max-w-3xl">
+        <div>
+          <p className="text-xs font-bold tracking-widest text-neutral-400 uppercase mb-0.5">Paso 1 (opcional)</p>
+          <h2 className="text-lg font-semibold text-neutral-900">Subir fotos</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Sube las fotos de los productos y copia las URLs para pegarlas en el CSV.
+          </p>
+        </div>
+        <UploadImagenesImportador />
+      </section>
+
+      {/* Paso 2: importar CSV */}
+      <section className="flex flex-col gap-3">
+        <div>
+          <p className="text-xs font-bold tracking-widest text-neutral-400 uppercase mb-0.5">Paso 2</p>
+          <h2 className="text-lg font-semibold text-neutral-900">Importar CSV</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Descarga la plantilla, completa los datos y sube el archivo.
+          </p>
+        </div>
+        <ImportadorCSV categorias={categorias ?? []} />
+      </section>
     </div>
   );
 }

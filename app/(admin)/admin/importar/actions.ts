@@ -3,7 +3,35 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getEmpleadoActual, puedeGestionarCatalogo } from "@/lib/auth/empleado";
+import { subirImagenProducto } from "@/lib/cloudinary";
 import type { NivelPrecio } from "@/types";
+
+export async function subirImagenesImportador(formData: FormData): Promise<{ urls: string[]; errores: string[] }> {
+  const empleado = await getEmpleadoActual();
+  if (!puedeGestionarCatalogo(empleado)) throw new Error("No autorizado");
+
+  const archivos = formData.getAll("imagenes") as File[];
+  if (archivos.length === 0) return { urls: [], errores: [] };
+  if (archivos.length > 20) throw new Error("Maximo 20 imagenes a la vez");
+
+  const urls: string[] = [];
+  const errores: string[] = [];
+
+  await Promise.all(
+    archivos.map(async (archivo) => {
+      try {
+        // Usa un slug temporal basado en el nombre del archivo
+        const slug = "importar/" + archivo.name.replace(/\.[^.]+$/, "").replace(/[^a-z0-9]/gi, "-").toLowerCase();
+        const url = await subirImagenProducto(archivo, slug);
+        urls.push(url);
+      } catch {
+        errores.push(archivo.name);
+      }
+    })
+  );
+
+  return { urls, errores };
+}
 
 const NIVELES: NivelPrecio[] = ["contraentrega", "tarjeta", "addi", "sistecredito"];
 
