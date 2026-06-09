@@ -36,7 +36,6 @@ const HEADERS_AMIGABLES = [
   "descripcion",
   "unidades",
   "precio",
-  "precio_anterior",
   "fotos",
   "video",
 ];
@@ -48,7 +47,6 @@ const COLUMNAS_GUIA = [
   { col: "descripcion",     req: false, desc: "Descripcion del producto. Se recomienda 1-3 oraciones.",                                                         ej: "Crema hidratante para uso diario." },
   { col: "unidades",        req: false, desc: "Cantidad disponible. 0 o vacio = agotado.",                                                                      ej: "10" },
   { col: "precio",          req: true,  desc: "Precio de venta del producto.",                                          ej: "35000" },
-  { col: "precio_anterior", req: false, desc: "Precio antes del descuento. Se muestra tachado. Dejar vacio si no hay descuento.", ej: "40000" },
   { col: "fotos",           req: false, desc: "URL de la foto del producto (sube las fotos en el Paso 1 y pega la URL aqui). Para varias fotos separalas con ;", ej: "https://res.cloudinary.com/.../foto.jpg" },
   { col: "video",           req: false, desc: "Link del video en Instagram o TikTok del producto. Se muestra en la pagina del producto.",                       ej: "https://www.instagram.com/reel/XXXXX/" },
 ];
@@ -103,9 +101,9 @@ function generarPlantilla(categorias: Categoria[]) {
   const cat1 = categorias[0]?.slug ?? "";
 
   const ejemplos = [
-    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario.", "10", "35000", "40000", "", ""],
-    ["Shampoo Anticaspa 400ml",    cat1, "",                    "5",  "22000", "",      "", "https://www.instagram.com/reel/XXXXX/"],
-    ["Mascarilla Facial Vitamina", cat1, "",                    "0",  "18000", "25000", "", ""],
+    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario.", "10", "35000", "", ""],
+    ["Shampoo Anticaspa 400ml",    cat1, "",                    "5",  "22000", "", "https://www.instagram.com/reel/XXXXX/"],
+    ["Mascarilla Facial Vitamina", cat1, "",                    "0",  "18000", "", ""],
   ];
 
   const lineas: string[] = [HEADERS_AMIGABLES.join(SEP)];
