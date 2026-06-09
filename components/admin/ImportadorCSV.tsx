@@ -83,52 +83,35 @@ function normalizarFila(raw: Record<string, string>): FilaCSV {
   };
 }
 
+// Usa ; como separador porque Excel en Colombia/Espana lo requiere (separador de listas regional)
+const SEP = ";";
+
 function csvFila(valores: string[]): string {
-  return valores.map((v) => `"${v.replace(/"/g, '""')}"`).join(",");
+  return valores.map((v) => `"${v.replace(/"/g, '""')}"`).join(SEP);
 }
 
 function generarPlantilla(categorias: Categoria[]) {
   const cat1 = categorias[0]?.slug ?? "";
-  const cat2 = categorias[1]?.slug ?? cat1;
 
   const ejemplos = [
-    [
-      "Nombre del Producto 1",
-      cat1,
-      "Descripcion corta del producto.",
-      "10",
-      "35000", "32000", "30000", "40000",
-      "https://res.cloudinary.com/dknjydn9k/image/upload/v1/foto.jpg",
-    ],
-    [
-      "Nombre del Producto 2",
-      cat2,
-      "",
-      "5",
-      "80000", "", "", "",
-      "",
-    ],
-    [
-      "Producto Agotado de Ejemplo",
-      cat1,
-      "",
-      "0",
-      "25000", "", "", "30000",
-      "",
-    ],
+    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario.", "10", "35000", "",      "", "40000", ""],
+    ["Shampoo Anticaspa 400ml",    cat1, "",                    "5",  "22000", "20000", "", "",      ""],
+    ["Mascarilla Facial Vitamina", cat1, "",                    "0",  "18000", "",      "", "25000", ""],
   ];
 
-  const lineas: string[] = [HEADERS_AMIGABLES.join(",")];
+  const lineas: string[] = [HEADERS_AMIGABLES.join(SEP)];
   for (const fila of ejemplos) lineas.push(csvFila(fila));
 
   if (categorias.length > 0) {
     lineas.push("");
-    lineas.push(csvFila(["CATEGORIAS DISPONIBLES (copia en la columna categoria):", ...categorias.map((c) => c.slug)]));
-    lineas.push(csvFila(["Nombres de referencia:", ...categorias.map((c) => c.nombre)]));
+    lineas.push(csvFila(["=== CATEGORIAS DISPONIBLES ===", ...Array(HEADERS_AMIGABLES.length - 1).fill("")]));
+    for (const c of categorias) {
+      lineas.push(csvFila([c.slug, c.nombre, ...Array(HEADERS_AMIGABLES.length - 2).fill("")]));
+    }
   }
 
-  const bom = "﻿";
-  const blob = new Blob([bom + lineas.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const bom = "﻿"; // UTF-8 BOM para que Excel reconozca tildes
+  const blob = new Blob([bom + lineas.join("\r\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -160,6 +143,7 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
+      delimiter: "",   // auto-detecta , o ; segun el archivo
       complete: (res) => {
         if (res.errors.length > 0) { setErrorParseo(res.errors[0].message); return; }
         const limpias = res.data
