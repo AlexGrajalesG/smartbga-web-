@@ -8,6 +8,7 @@ export type AuthState = { error?: string; message?: string } | undefined
 export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const next = formData.get('next') as string | null
 
   if (!email || !password) return { error: 'Completa todos los campos.' }
 
@@ -19,7 +20,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
     return { error: 'Error al iniciar sesión. Intenta de nuevo.' }
   }
 
-  redirect('/')
+  redirect(next && next.startsWith('/') ? next : '/')
 }
 
 export async function register(_prev: AuthState, formData: FormData): Promise<AuthState> {

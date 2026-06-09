@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/actions/auth'
+import { ESTADO_ORDEN_LABEL, ESTADO_ORDEN_COLOR } from '@/lib/ordenes'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Mi cuenta' }
@@ -23,22 +25,6 @@ export default async function PerfilPage() {
     .eq('usuario_id', perfil?.id ?? '')
     .order('created_at', { ascending: false })
     .limit(10)
-
-  const ESTADO_LABEL: Record<string, string> = {
-    pendiente: 'Pendiente',
-    confirmada: 'Confirmada',
-    en_despacho: 'En camino',
-    entregada: 'Entregada',
-    cancelada: 'Cancelada',
-  }
-
-  const ESTADO_COLOR: Record<string, string> = {
-    pendiente: 'bg-yellow-100 text-yellow-700',
-    confirmada: 'bg-blue-100 text-blue-700',
-    en_despacho: 'bg-purple-100 text-purple-700',
-    entregada: 'bg-green-100 text-green-700',
-    cancelada: 'bg-red-100 text-red-700',
-  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -86,20 +72,24 @@ export default async function PerfilPage() {
         ) : (
           <div className="flex flex-col divide-y divide-neutral-100">
             {ordenes.map((o) => (
-              <div key={o.id} className="py-3 flex items-center justify-between gap-4">
+              <Link
+                key={o.id}
+                href={`/pedido/${o.id}`}
+                className="py-3 flex items-center justify-between gap-4 hover:bg-neutral-50 transition-colors -mx-2 px-2 rounded-lg"
+              >
                 <div>
                   <p className="text-xs text-neutral-400 font-mono">#{o.id.slice(0, 8).toUpperCase()}</p>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     {new Date(o.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ESTADO_COLOR[o.estado] ?? 'bg-neutral-100 text-neutral-600'}`}>
-                  {ESTADO_LABEL[o.estado] ?? o.estado}
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ESTADO_ORDEN_COLOR[o.estado as keyof typeof ESTADO_ORDEN_COLOR] ?? 'bg-neutral-100 text-neutral-600'}`}>
+                  {ESTADO_ORDEN_LABEL[o.estado as keyof typeof ESTADO_ORDEN_LABEL] ?? o.estado}
                 </span>
                 <p className="font-semibold text-sm">
                   ${o.total.toLocaleString('es-CO')}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         )}
