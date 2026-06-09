@@ -18,28 +18,70 @@ interface Categoria {
   nombre: string;
 }
 
-const COLUMNAS_GUIA = [
-  { col: "slug",                 req: true,  desc: "Identificador unico del producto. Solo letras minusculas, numeros y guiones. No puede repetirse.",       ej: "camiseta-negra-m" },
-  { col: "nombre",               req: true,  desc: "Nombre visible del producto en la tienda.",                                                              ej: "Camiseta Negra Talla M" },
-  { col: "categoria_slug",       req: false, desc: "Slug de la categoria (ver lista de categorias disponibles abajo). Dejar vacio si no aplica.",            ej: "ropa" },
-  { col: "precio_contraentrega", req: true,  desc: "Precio cuando el cliente paga en efectivo al recibir el pedido. Al menos uno de los cuatro precios es obligatorio.", ej: "35000" },
-  { col: "precio_tarjeta",       req: false, desc: "Precio pagando con tarjeta debito o credito.",                                                           ej: "32000" },
-  { col: "precio_addi",          req: false, desc: "Precio con financiamiento Addi (paga despues).",                                                         ej: "30000" },
-  { col: "precio_sistecredito",  req: false, desc: "Precio con Sistecredito.",                                                                               ej: "28000" },
-  { col: "precio_anterior",      req: false, desc: "Precio antes del descuento. Se muestra tachado. Dejar vacio si no hay descuento.",                       ej: "40000" },
-  { col: "stock",                req: false, desc: "Unidades disponibles. 0 o vacio = agotado.",                                                             ej: "10" },
-  { col: "descripcion",          req: false, desc: "Descripcion del producto. Se recomienda 1-3 oraciones.",                                                 ej: "Camiseta de algodon 100%." },
-  { col: "imagenes",             req: false, desc: "URLs de las fotos separadas por punto y coma (;). Las imagenes deben estar subidas a Cloudinary primero.", ej: "https://res.cloudinary.com/dknjydn9k/image/upload/v1/productos/camiseta.jpg" },
+// Convierte texto a slug: "Camiseta Roja M" -> "camiseta-roja-m"
+function slugify(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+// Columnas amigables que se muestran en la plantilla
+const HEADERS_AMIGABLES = [
+  "nombre",
+  "categoria",
+  "descripcion",
+  "unidades",
+  "precio",
+  "precio_tarjeta",
+  "precio_addi",
+  "precio_anterior",
+  "fotos",
 ];
 
+// Guia de columnas con nombres amigables
+const COLUMNAS_GUIA = [
+  { col: "nombre",          req: true,  desc: "Nombre visible del producto en la tienda.",                                                                      ej: "Crema Hidratante 200ml" },
+  { col: "categoria",       req: false, desc: "Slug de la categoria. Ver la lista de categorias disponibles abajo.",                                            ej: "belleza-cuidado-personal" },
+  { col: "descripcion",     req: false, desc: "Descripcion del producto. Se recomienda 1-3 oraciones.",                                                         ej: "Crema hidratante para uso diario." },
+  { col: "unidades",        req: false, desc: "Cantidad disponible. 0 o vacio = agotado.",                                                                      ej: "10" },
+  { col: "precio",          req: true,  desc: "Precio de venta principal (pago en efectivo / contraentrega). Al menos este campo es obligatorio.",              ej: "35000" },
+  { col: "precio_tarjeta",  req: false, desc: "Precio pagando con tarjeta debito o credito. Dejar vacio para usar el mismo precio.",                            ej: "32000" },
+  { col: "precio_addi",     req: false, desc: "Precio con financiamiento Addi. Dejar vacio si no aplica.",                                                      ej: "30000" },
+  { col: "precio_anterior", req: false, desc: "Precio antes del descuento. Se muestra tachado. Dejar vacio si no hay descuento.",                               ej: "40000" },
+  { col: "fotos",           req: false, desc: "URL de la foto del producto (sube las fotos en el Paso 1 y pega la URL aqui). Para varias fotos separalas con ;", ej: "https://res.cloudinary.com/.../foto.jpg" },
+];
+
+// Columnas a mostrar en la vista previa
 const COLUMNAS_PREVIA: { key: keyof FilaCSV; label: string }[] = [
-  { key: "slug",                 label: "Slug" },
   { key: "nombre",               label: "Nombre" },
   { key: "categoria_slug",       label: "Categoria" },
-  { key: "precio_contraentrega", label: "Contraentrega" },
-  { key: "precio_tarjeta",       label: "Tarjeta" },
-  { key: "stock",                label: "Stock" },
+  { key: "precio_contraentrega", label: "Precio" },
+  { key: "stock",                label: "Unidades" },
+  { key: "imagenes",             label: "Fotos" },
 ];
+
+// Transforma una fila con nombres amigables a FilaCSV (nombres internos)
+function normalizarFila(raw: Record<string, string>): FilaCSV {
+  const nombre = (raw.nombre ?? "").trim();
+  const slug = (raw.slug ?? "").trim() || slugify(nombre);
+  return {
+    slug,
+    nombre,
+    categoria_slug: raw.categoria ?? raw.categoria_slug,
+    precio_contraentrega: raw.precio ?? raw.precio_contraentrega,
+    precio_tarjeta: raw.precio_tarjeta,
+    precio_addi: raw.precio_addi,
+    precio_sistecredito: raw.precio_sistecredito,
+    precio_anterior: raw.precio_anterior,
+    stock: raw.unidades ?? raw.stock,
+    descripcion: raw.descripcion,
+    imagenes: raw.fotos ?? raw.imagenes,
+  };
+}
 
 function csvFila(valores: string[]): string {
   return valores.map((v) => `"${v.replace(/"/g, '""')}"`).join(",");
@@ -48,52 +90,44 @@ function csvFila(valores: string[]): string {
 function generarPlantilla(categorias: Categoria[]) {
   const cat1 = categorias[0]?.slug ?? "";
   const cat2 = categorias[1]?.slug ?? cat1;
-  const headers = COLUMNAS_GUIA.map((c) => c.col);
 
-  // 3 filas de ejemplo — una imagen por producto (sin punto y coma) para evitar confusion
   const ejemplos = [
     [
-      "producto-uno",
       "Nombre del Producto 1",
       cat1,
-      "35000", "32000", "30000", "28000",
-      "40000", "10",
       "Descripcion corta del producto.",
+      "10",
+      "35000", "32000", "30000", "40000",
       "https://res.cloudinary.com/dknjydn9k/image/upload/v1/foto.jpg",
     ],
     [
-      "producto-dos",
       "Nombre del Producto 2",
       cat2,
+      "",
+      "5",
       "80000", "", "", "",
-      "", "5",
-      "Descripcion opcional.",
       "",
     ],
     [
-      "producto-tres-agotado",
-      "Nombre del Producto 3 (agotado)",
+      "Producto Agotado de Ejemplo",
       cat1,
-      "25000", "22000", "", "",
-      "30000", "0",
       "",
+      "0",
+      "25000", "", "", "30000",
       "",
     ],
   ];
 
-  const lineas: string[] = [headers.join(",")];
+  const lineas: string[] = [HEADERS_AMIGABLES.join(",")];
   for (const fila of ejemplos) lineas.push(csvFila(fila));
 
-  // Categorias en una sola fila: columna A = etiqueta, resto = slugs
   if (categorias.length > 0) {
     lineas.push("");
-    const filaCats = ["CATEGORIAS (copia el slug en categoria_slug):", ...categorias.map((c) => c.slug)];
-    lineas.push(filaCats.map((v) => `"${v}"`).join(","));
-    const filaNombres = ["Nombres de referencia:", ...categorias.map((c) => c.nombre)];
-    lineas.push(filaNombres.map((v) => `"${v}"`).join(","));
+    lineas.push(csvFila(["CATEGORIAS DISPONIBLES (copia en la columna categoria):", ...categorias.map((c) => c.slug)]));
+    lineas.push(csvFila(["Nombres de referencia:", ...categorias.map((c) => c.nombre)]));
   }
 
-  const bom = "﻿"; // UTF-8 BOM para que Excel reconozca tildes
+  const bom = "﻿";
   const blob = new Blob([bom + lineas.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -123,13 +157,14 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
     setErrorParseo(null);
     setFilas([]);
 
-    Papa.parse<FilaCSV>(file, {
+    Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
       complete: (res) => {
         if (res.errors.length > 0) { setErrorParseo(res.errors[0].message); return; }
-        // ignorar filas que son comentarios de la plantilla (slug empieza con #)
-        const limpias = res.data.filter((f) => !String(f.slug ?? "").startsWith("#"));
+        const limpias = res.data
+          .filter((f) => !String(f.slug ?? f.nombre ?? "").startsWith("#") && !String(f.nombre ?? "").startsWith("CATEGORIAS"))
+          .map(normalizarFila);
         setFilas(limpias);
       },
       error: (err) => setErrorParseo(err.message),
@@ -165,9 +200,9 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
   return (
     <div className="flex flex-col gap-5 max-w-3xl">
 
-      {/* Zona de subida */}
       {!archivo && (
         <div className="flex flex-col gap-3">
+          {/* Zona de subida */}
           <label
             className={"flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center cursor-pointer transition-colors " + claseZona}
             onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
@@ -203,7 +238,7 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
             <div>
               <p className="text-xs font-semibold text-neutral-700">Descarga la plantilla</p>
               <p className="text-xs text-neutral-400 mt-0.5">
-                Incluye 3 filas de ejemplo y las categorias disponibles
+                Columnas en espanol, 3 filas de ejemplo y lista de categorias
               </p>
             </div>
             <button
@@ -223,13 +258,12 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
               onClick={() => setGuiaAbierta((v) => !v)}
               className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer"
             >
-              Guia de columnas
+              Que significa cada columna?
               {guiaAbierta ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
 
             {guiaAbierta && (
               <div className="divide-y divide-neutral-100">
-                {/* Tabla de columnas */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
@@ -249,25 +283,24 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
                               ? <span className="text-[#8C1A1A] font-bold">Si</span>
                               : <span className="text-neutral-400">No</span>}
                           </td>
-                          <td className="px-4 py-2.5 text-neutral-500 leading-relaxed">{c.desc}</td>
-                          <td className="px-4 py-2.5 font-mono text-neutral-600 whitespace-nowrap">{c.ej}</td>
+                          <td className="px-4 py-2.5 text-neutral-500 leading-relaxed max-w-xs">{c.desc}</td>
+                          <td className="px-4 py-2.5 font-mono text-neutral-600 whitespace-nowrap text-[10px]">{c.ej}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                {/* Categorias disponibles */}
                 {categorias.length > 0 && (
                   <div className="px-4 py-4 bg-neutral-50">
                     <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                      Categorias disponibles (usa el slug en la columna categoria_slug)
+                      Categorias disponibles
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {categorias.map((c) => (
                         <div key={c.slug} className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5">
                           <span className="font-mono text-xs text-neutral-800">{c.slug}</span>
-                          <span className="text-neutral-400 text-xs">—</span>
+                          <span className="text-neutral-300 text-xs">|</span>
                           <span className="text-xs text-neutral-500">{c.nombre}</span>
                         </div>
                       ))}
