@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { useRouter } from "next/navigation";
 import {
   UploadCloud, Loader2, CircleCheck, CircleAlert,
@@ -140,6 +141,20 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
   const [arrastrando, setArrastrando] = useState(false);
   const [guiaAbierta, setGuiaAbierta] = useState(false);
 
+  const procesarFilas = (data: Record<string, unknown>[]) => {
+    const limpias = data
+      .map((fila) => {
+        const texto: Record<string, string> = {};
+        for (const [clave, valor] of Object.entries(fila)) {
+          texto[clave] = valor == null ? "" : String(valor).trim();
+        }
+        return texto;
+      })
+      .filter((f) => !String(f.slug ?? f.nombre ?? "").startsWith("#") && !String(f.nombre ?? "").startsWith("CATEGORIAS"))
+      .map(normalizarFila);
+    setFilas(limpias);
+  };
+
   const procesarArchivo = (file: File) => {
     setArchivo(file);
     setResultado(null);
@@ -147,16 +162,27 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
     setErrorParseo(null);
     setFilas([]);
 
+    const esExcel = /\.(xlsx|xls)$/i.test(file.name);
+
+    if (esExcel) {
+      file.arrayBuffer()
+        .then((buffer) => {
+          const libro = XLSX.read(buffer, { type: "array" });
+          const hoja = libro.Sheets[libro.SheetNames[0]];
+          const filasExcel = XLSX.utils.sheet_to_json<Record<string, unknown>>(hoja, { defval: "" });
+          procesarFilas(filasExcel);
+        })
+        .catch((err) => setErrorParseo(err instanceof Error ? err.message : "No se pudo leer el archivo Excel"));
+      return;
+    }
+
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
       delimiter: "",   // auto-detecta , o ; segun el archivo
       complete: (res) => {
         if (res.errors.length > 0) { setErrorParseo(res.errors[0].message); return; }
-        const limpias = res.data
-          .filter((f) => !String(f.slug ?? f.nombre ?? "").startsWith("#") && !String(f.nombre ?? "").startsWith("CATEGORIAS"))
-          .map(normalizarFila);
-        setFilas(limpias);
+        procesarFilas(res.data);
       },
       error: (err) => setErrorParseo(err.message),
     });
@@ -208,7 +234,7 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
             <input
               ref={inputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -218,9 +244,9 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
             <UploadCloud size={28} className={arrastrando ? "text-[#8C1A1A]" : "text-neutral-300"} />
             <div>
               <p className="text-sm font-semibold text-neutral-700">
-                {arrastrando ? "Suelta el archivo aqui" : "Arrastra tu CSV aqui"}
+                {arrastrando ? "Suelta el archivo aqui" : "Arrastra tu CSV o Excel aqui"}
               </p>
-              <p className="text-xs text-neutral-400 mt-0.5">o haz clic para seleccionar el archivo</p>
+              <p className="text-xs text-neutral-400 mt-0.5">o haz clic para seleccionar el archivo (.csv, .xlsx, .xls)</p>
             </div>
           </label>
 
