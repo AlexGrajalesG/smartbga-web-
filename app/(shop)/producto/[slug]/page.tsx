@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProductoBySlug } from "@/lib/supabase/queries";
+import { normalizarVideoEmbed } from "@/lib/video";
 import GaleriaImagenes from "@/components/productos/GaleriaImagenes";
 import PanelCompra from "@/components/productos/PanelCompra";
 import { ChevronRight, Zap, RotateCcw, ShieldCheck, Headphones } from "lucide-react";
@@ -51,6 +52,10 @@ export default async function ProductoPage({ params }: Props) {
   const parrafos = producto.descripcion
     ? producto.descripcion.split("\n\n").filter(Boolean)
     : [];
+
+  const videoEmbed = producto.video_url
+    ? normalizarVideoEmbed(producto.video_url)
+    : null;
 
   return (
     <div id="top" className="bg-white">
@@ -141,7 +146,7 @@ export default async function ProductoPage({ params }: Props) {
       </section>
 
       {/* ─── INSTAGRAM REEL ────────────────────────────────────── */}
-      {producto.video_url && (
+      {videoEmbed && (
         <section className="max-w-6xl mx-auto px-4 py-14">
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
 
@@ -171,7 +176,7 @@ export default async function ProductoPage({ params }: Props) {
             <div className="flex-shrink-0 w-full max-w-[320px] mx-auto lg:mx-0">
               <div className="rounded-3xl overflow-hidden shadow-2xl shadow-neutral-200 bg-black border border-neutral-100">
                 <iframe
-                  src={producto.video_url}
+                  src={videoEmbed}
                   className="w-full"
                   style={{ height: "560px", border: "none" }}
                   allowFullScreen

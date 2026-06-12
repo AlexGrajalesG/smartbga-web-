@@ -136,7 +136,7 @@ export default function ProductoForm({ producto, categorias, proveedores, esAdmi
           />
         </Campo>
 
-        <Campo label="Video (Instagram o TikTok)" hint="Pega el link del reel o video del producto — se mostrará en la página">
+        <Campo label="Video (Instagram o TikTok)" hint="Pega el link tal cual lo copias de la app (con reel/, p/ o video/) — se ajusta solo para mostrarse en la página">
           <input
             name="video_url"
             type="url"
