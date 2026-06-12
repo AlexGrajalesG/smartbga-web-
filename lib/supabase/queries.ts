@@ -1,9 +1,9 @@
 import { unstable_cache } from 'next/cache'
-import { createClient } from './server'
+import { createPublicClient } from './server'
 import type { Producto, Categoria } from '@/types'
 
 async function _getProductos(categoriaSlug?: string): Promise<Producto[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   let query = supabase
     .from('productos')
     .select('*, categoria:categorias(*)')
@@ -18,7 +18,7 @@ async function _getProductos(categoriaSlug?: string): Promise<Producto[]> {
 }
 
 async function _getProductoBySlug(slug: string): Promise<Producto | null> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data, error } = await supabase
     .from('productos')
     .select('*, categoria:categorias(*)')
@@ -30,7 +30,7 @@ async function _getProductoBySlug(slug: string): Promise<Producto | null> {
 }
 
 async function _getCategorias(): Promise<Categoria[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data, error } = await supabase.from('categorias').select('*').order('nombre')
   if (error) throw error
   return data ?? []

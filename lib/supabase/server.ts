@@ -23,6 +23,14 @@ export async function createClient() {
   )
 }
 
+// Cliente anonimo sin cookies — para lecturas publicas cacheables (unstable_cache no permite cookies())
+export function createPublicClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
 // Cliente admin con service_role — bypasea RLS, solo usar en Server Actions/Route Handlers
 export function createAdminClient() {
   return createSupabaseClient(
