@@ -1,7 +1,10 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { buildWompiCheckoutUrl } from "@/lib/wompi";
+import { precioParaMetodo } from "@/lib/precios";
 import type { MetodoPago } from "@/types";
 
 export interface ItemOrden {
@@ -17,7 +20,7 @@ export interface CrearOrdenInput {
   notas?: string;
 }
 
-export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string }> {
+export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; wompiUrl?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Debes iniciar sesión para continuar");
@@ -57,7 +60,7 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string }
   const ids = input.items.map((i) => i.producto_id);
   const { data: productos, error: errorProductos } = await admin
     .from("productos")
-    .select("id, nombre, precio_venta, precio_costo, proveedor_id, stock, activo")
+    .select("id, nombre, precio_venta, precio_costo, precios, proveedor_id, stock, activo")
     .in("id", ids);
   if (errorProductos) throw new Error(errorProductos.message);
 
@@ -75,7 +78,7 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string }
 
   const total = input.items.reduce((acc, { producto_id, cantidad }) => {
     const producto = productoPorId.get(producto_id)!;
-    return acc + producto.precio_venta * cantidad;
+    return acc + precioParaMetodo(producto, input.metodo_pago) * cantidad;
   }, 0);
 
   const direccionCompleta = `${direccion} · Contacto: ${celular}`;
@@ -102,7 +105,7 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string }
       producto_id,
       proveedor_id: producto.proveedor_id,
       cantidad,
-      precio_unitario: producto.precio_venta,
+      precio_unitario: precioParaMetodo(producto, input.metodo_pago),
       precio_costo: producto.precio_costo ?? 0,
     };
   });
@@ -137,5 +140,21 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string }
   }
 
   revalidatePath("/perfil");
+
+  if (input.metodo_pago === "wompi") {
+    const headersList = await headers();
+    const host = headersList.get("host") ?? "www.smartbga.shop";
+    const proto = host.startsWith("localhost") ? "http" : "https";
+    const appUrl = `${proto}://${host}`;
+
+    const wompiUrl = buildWompiCheckoutUrl({
+      reference: orden.id as string,
+      amountInCents: Math.round(total) * 100,
+      redirectUrl: `${appUrl}/pedido/${orden.id}`,
+      customerEmail: user.email ?? undefined,
+    });
+    return { id: orden.id as string, wompiUrl };
+  }
+
   return { id: orden.id as string };
 }

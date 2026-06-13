@@ -106,14 +106,14 @@ export default async function ProductoPage({ params }: Props) {
       {/* ─── DESCRIPCIÓN ───────────────────────────────────────── */}
       {parrafos.length > 0 && (
         <section className="max-w-4xl mx-auto px-4 py-14 animate-fade-up">
-          <h2 className="text-xl font-bold text-neutral-900 mb-6">
+          <h2 className="font-display text-xl font-semibold text-[#1C0A0A] mb-6">
             Sobre este producto
           </h2>
           <div className="flex flex-col gap-5">
             {parrafos.map((p, i) => (
               <p
                 key={i}
-                className="text-sm text-neutral-600 leading-relaxed whitespace-pre-line"
+                className="text-sm text-[#6B5B52] leading-relaxed whitespace-pre-line"
               >
                 {p}
               </p>
@@ -123,22 +123,22 @@ export default async function ProductoPage({ params }: Props) {
       )}
 
       {/* ─── BENEFICIOS ────────────────────────────────────────── */}
-      <section className="bg-neutral-50 border-y border-neutral-100">
+      <section className="bg-[#F5F3EE]">
         <div className="max-w-6xl mx-auto px-4 py-14">
-          <h2 className="text-xl font-bold text-neutral-900 mb-8 text-center">
+          <h2 className="font-display text-xl font-semibold text-[#1C0A0A] mb-8 text-center">
             ¿Por qué comprar en SmartBga?
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {BENEFICIOS.map(({ icon: Icon, titulo, desc }) => (
               <div
                 key={titulo}
-                className="bg-white rounded-2xl p-5 border border-neutral-100 shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="bg-white rounded-lg shadow-ambient p-5"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#8C1A1A]/8 flex items-center justify-center mb-4">
-                  <Icon size={20} className="text-[#8C1A1A]" />
+                <div className="w-10 h-10 rounded-md bg-[#6a0008]/8 flex items-center justify-center mb-4">
+                  <Icon size={20} className="text-[#6a0008]" />
                 </div>
-                <p className="font-semibold text-sm text-neutral-900 mb-1">{titulo}</p>
-                <p className="text-xs text-neutral-500 leading-relaxed">{desc}</p>
+                <p className="font-semibold text-sm text-[#1C0A0A] mb-1">{titulo}</p>
+                <p className="text-xs text-[#6B5B52] leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -147,25 +147,25 @@ export default async function ProductoPage({ params }: Props) {
 
       {/* ─── INSTAGRAM REEL ────────────────────────────────────── */}
       {videoEmbed && (
-        <section className="max-w-6xl mx-auto px-4 py-14">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
+        <section className="bg-[#6a0008]">
+          <div className="max-w-6xl mx-auto px-4 py-14 flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
 
             {/* Texto izquierda */}
             <div className="flex-1 lg:max-w-sm">
-              <span className="text-xs font-bold tracking-widest text-[#8C1A1A] uppercase">
+              <span className="text-xs font-bold tracking-widest text-[#C9A84C] uppercase">
                 Míralo en acción
               </span>
-              <h2 className="mt-2 text-2xl md:text-3xl font-bold text-neutral-900 leading-tight">
+              <h2 className="font-display mt-2 text-2xl md:text-3xl font-semibold text-white leading-tight">
                 El resultado habla por sí solo
               </h2>
-              <p className="mt-4 text-sm text-neutral-500 leading-relaxed">
+              <p className="mt-4 text-sm text-white/70 leading-relaxed">
                 Nuestro equipo probó el producto antes de publicarlo. Así se ve en uso real, sin filtros ni edición.
               </p>
               <a
                 href="https://www.instagram.com/smart.bga"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#8C1A1A] hover:text-[#6B1313] transition-colors cursor-pointer"
+                className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#C9A84C] hover:text-white transition-colors cursor-pointer"
               >
                 Ver más en @smart.bga
                 <ChevronRight size={15} />
@@ -174,7 +174,7 @@ export default async function ProductoPage({ params }: Props) {
 
             {/* Reel */}
             <div className="flex-shrink-0 w-full max-w-[320px] mx-auto lg:mx-0">
-              <div className="rounded-3xl overflow-hidden shadow-2xl shadow-neutral-200 bg-black border border-neutral-100">
+              <div className="rounded-lg overflow-hidden bg-black">
                 <iframe
                   src={videoEmbed}
                   className="w-full"
@@ -191,12 +191,12 @@ export default async function ProductoPage({ params }: Props) {
       )}
 
       {/* ─── CTA FINAL ─────────────────────────────────────────── */}
-      <section className="bg-[#111111]">
+      <section className="bg-[#1C0A0A]">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <p className="text-[#8C1A1A] text-sm font-bold tracking-widest uppercase mb-3">
+          <p className="text-[#C9A84C] text-sm font-bold tracking-widest uppercase mb-3">
             SmartBga
           </p>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
+          <h2 className="font-display text-2xl md:text-3xl font-semibold text-white mb-4 leading-tight">
             ¿Listo para llevarte el tuyo?
           </h2>
           <p className="text-neutral-400 mb-8 text-sm max-w-md mx-auto leading-relaxed">
@@ -204,7 +204,7 @@ export default async function ProductoPage({ params }: Props) {
           </p>
           <a
             href="#top"
-            className="inline-block px-10 py-4 bg-[#8C1A1A] hover:bg-[#6B1313] text-white font-bold rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#8C1A1A]/30 cursor-pointer"
+            className="inline-block px-10 py-4 bg-[#6a0008] hover:bg-[#8C1A1A] text-white font-bold rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             Agregar al carrito
           </a>

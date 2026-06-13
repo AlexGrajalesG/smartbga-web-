@@ -21,4 +21,6 @@ export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
   transferencia: "Transferencia o PSE",
   addi: "Addi — paga después",
   addi_presencial: "Addi (presencial)",
+  wompi: "Tarjeta / PSE / Nequi (Wompi)",
+  sistecredito: "Sistecrédito — paga después",
 };

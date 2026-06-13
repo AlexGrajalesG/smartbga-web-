@@ -1,12 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { getWompiTransaction } from "@/lib/wompi";
 import { ESTADO_ORDEN_LABEL, ESTADO_ORDEN_COLOR, METODO_PAGO_LABEL } from "@/lib/ordenes";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronRight, AlertCircle, Clock, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ id?: string }>;
+};
 
 interface ItemConProducto {
   id: string;
@@ -17,8 +21,10 @@ interface ItemConProducto {
 
 export const metadata: Metadata = { title: "Tu pedido — SmartBga" };
 
-export default async function PedidoPage({ params }: Props) {
+export default async function PedidoPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { id: wompiTxId } = await searchParams;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/pedido/${id}`);
@@ -31,17 +37,94 @@ export default async function PedidoPage({ params }: Props) {
 
   if (!orden) notFound();
 
+  // Verificar transacción Wompi al retornar del checkout
+  type WompiDisplayStatus = "APPROVED" | "DECLINED" | "ERROR" | "PENDING";
+  let wompiStatus: WompiDisplayStatus | null = null;
+
+  if (wompiTxId && orden.metodo_pago === "wompi" && orden.estado === "pendiente") {
+    const tx = await getWompiTransaction(wompiTxId);
+    const rawStatus = tx?.status ?? "ERROR";
+    wompiStatus = rawStatus === "VOIDED" ? "DECLINED" : rawStatus;
+
+    if (tx?.status === "APPROVED" && tx.reference === id) {
+      const admin = createAdminClient();
+      await admin
+        .from("ordenes")
+        .update({ estado: "confirmada", wompi_transaction_id: wompiTxId })
+        .eq("id", id);
+      orden.estado = "confirmada";
+    } else if (tx?.status === "PENDING") {
+      wompiStatus = "PENDING";
+    }
+  }
+
+  const pagoAprobado = orden.estado === "confirmada" && orden.metodo_pago === "wompi" && wompiTxId;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="flex flex-col items-center text-center gap-3 mb-10">
-        <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
-          <CheckCircle2 size={28} className="text-green-600" />
+
+      {/* Cabecera de estado */}
+      {wompiStatus === "DECLINED" || wompiStatus === "ERROR" ? (
+        <div className="flex flex-col items-center text-center gap-3 mb-10">
+          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+            <XCircle size={28} className="text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">Pago no completado</h1>
+          <p className="text-sm text-neutral-500 max-w-md">
+            Tu pago fue rechazado o no se pudo procesar. El pedido quedó pendiente — puedes intentar
+            de nuevo o contactarnos por Instagram para coordinar otro método.
+          </p>
         </div>
-        <h1 className="text-2xl font-bold text-neutral-900">¡Pedido recibido!</h1>
-        <p className="text-sm text-neutral-500 max-w-md">
-          Te contactaremos al número que dejaste para confirmar tu pedido y coordinar la entrega.
-        </p>
-      </div>
+      ) : wompiStatus === "PENDING" ? (
+        <div className="flex flex-col items-center text-center gap-3 mb-10">
+          <div className="w-14 h-14 rounded-full bg-yellow-50 flex items-center justify-center">
+            <Clock size={28} className="text-yellow-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">Pago en proceso</h1>
+          <p className="text-sm text-neutral-500 max-w-md">
+            Tu pago está siendo procesado. Te notificaremos cuando se confirme. Para pagos PSE esto
+            puede tomar unos minutos.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center text-center gap-3 mb-10">
+          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
+            <CheckCircle2 size={28} className="text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">
+            {pagoAprobado ? "¡Pago exitoso!" : "¡Pedido recibido!"}
+          </h1>
+          <p className="text-sm text-neutral-500 max-w-md">
+            {pagoAprobado
+              ? "Tu pago fue aprobado. Te contactaremos para coordinar la entrega."
+              : "Te contactaremos al número que dejaste para confirmar tu pedido y coordinar la entrega."}
+          </p>
+        </div>
+      )}
+
+      {/* Banner de alerta si el pago falló */}
+      {(wompiStatus === "DECLINED" || wompiStatus === "ERROR") && (
+        <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3.5 mb-5 text-sm text-red-700">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">
+              {wompiStatus === "DECLINED" ? "Pago rechazado" : "Error en el pago"}
+            </p>
+            <p className="text-xs text-red-500 mt-0.5">
+              El pedido está guardado. Puedes contactarnos por{" "}
+              <a
+                href="https://www.instagram.com/smart.bga"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                @smart.bga
+              </a>{" "}
+              para coordinar el pago.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-neutral-200 p-5 flex flex-col gap-5">
         <div className="flex items-center justify-between flex-wrap gap-2">

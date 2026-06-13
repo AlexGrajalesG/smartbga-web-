@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export type AuthState = { error?: string; message?: string } | undefined
@@ -41,7 +42,16 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
 
   const supabase = await createClient()
 
-  const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+  const headersList = await headers()
+  const host = headersList.get('host') ?? 'www.smartbga.shop'
+  const proto = host.startsWith('localhost') ? 'http' : 'https'
+  const appUrl = `${proto}://${host}`
+
+  const { data, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: `${appUrl}/auth/callback` },
+  })
   if (signUpError) {
     if (signUpError.message.includes('already registered')) return { error: 'Este email ya está registrado.' }
     return { error: 'Error al crear la cuenta. Intenta de nuevo.' }

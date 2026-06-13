@@ -132,10 +132,11 @@ CREATE TABLE IF NOT EXISTS ordenes (
                   CHECK (estado IN ('pendiente', 'confirmada', 'en_despacho', 'entregada', 'cancelada')),
   total           numeric(12,2) NOT NULL CHECK (total >= 0),
   direccion_envio text,
-  metodo_pago     text CHECK (metodo_pago IN ('addi', 'transferencia', 'efectivo', 'addi_presencial')),
-  addi_order_id   text,
-  notas           text,
-  created_at      timestamptz NOT NULL DEFAULT now()
+  metodo_pago           text CHECK (metodo_pago IN ('addi', 'transferencia', 'efectivo', 'addi_presencial', 'wompi', 'sistecredito')),
+  addi_order_id         text,
+  wompi_transaction_id  text,
+  notas                 text,
+  created_at            timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS orden_items (
@@ -312,6 +313,10 @@ CREATE POLICY "usuarios_self_insert" ON usuarios
 
 CREATE POLICY "usuarios_self_update" ON usuarios
   FOR UPDATE USING (auth_id = auth.uid());
+
+-- EMPLEADOS: cada staff ve solo su propio registro (necesario para getEmpleadoActual())
+CREATE POLICY "empleados_self_read" ON empleados
+  FOR SELECT USING (auth_id = auth.uid());
 
 -- ORDENES: cliente ve solo las suyas
 CREATE POLICY "ordenes_user_read" ON ordenes

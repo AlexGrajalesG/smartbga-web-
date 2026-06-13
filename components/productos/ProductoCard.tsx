@@ -18,7 +18,7 @@ export default function ProductoCard({
     <div className="group flex flex-col">
       <Link
         href={`/producto/${producto.slug}`}
-        className="block overflow-hidden rounded-2xl bg-neutral-50 aspect-square relative ring-1 ring-neutral-100 group-hover:ring-[#8C1A1A]/40 transition-all duration-300"
+        className="block overflow-hidden rounded-lg bg-neutral-50 aspect-square relative ring-1 ring-neutral-100 group-hover:ring-[#6a0008]/40 transition-all duration-300"
       >
         <Image
           src={imagen}
@@ -53,7 +53,7 @@ export default function ProductoCard({
       <div className="mt-3 flex flex-col gap-1.5">
         <Link
           href={`/producto/${producto.slug}`}
-          className="text-sm font-medium text-neutral-800 hover:text-[#8C1A1A] transition-colors line-clamp-2 leading-snug"
+          className="font-medium text-neutral-800 hover:text-[#6a0008] transition-colors line-clamp-2 leading-snug text-sm"
         >
           {producto.nombre}
         </Link>

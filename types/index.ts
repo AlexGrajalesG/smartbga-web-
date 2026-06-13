@@ -98,7 +98,7 @@ export interface PuntoVenta {
 
 export type EstadoOrden = 'pendiente' | 'confirmada' | 'en_despacho' | 'entregada' | 'cancelada'
 export type CanalOrden = 'online' | 'pos'
-export type MetodoPago = 'addi' | 'transferencia' | 'efectivo' | 'addi_presencial'
+export type MetodoPago = 'addi' | 'transferencia' | 'efectivo' | 'addi_presencial' | 'wompi' | 'sistecredito'
 
 export interface Orden {
   id: string
@@ -109,6 +109,7 @@ export interface Orden {
   direccion_envio: string | null
   metodo_pago: MetodoPago | null
   addi_order_id: string | null
+  wompi_transaction_id: string | null
   notas: string | null
   created_at: string
   usuario?: Usuario

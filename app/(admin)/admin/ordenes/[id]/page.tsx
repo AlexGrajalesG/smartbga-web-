@@ -20,6 +20,8 @@ const METODO: Record<string, string> = {
   transferencia:   "Transferencia o PSE",
   addi:            "Addi — paga después",
   addi_presencial: "Addi presencial",
+  sistecredito:    "Sistecrédito — paga después",
+  wompi:           "Tarjeta / PSE / Nequi (Wompi)",
 };
 
 function formatFecha(iso: string) {

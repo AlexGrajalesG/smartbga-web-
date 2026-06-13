@@ -17,13 +17,13 @@ export default function RegisterPage() {
   if (state?.message) {
     return (
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm text-center">
+        <div className="bg-white rounded-lg shadow-ambient p-8 text-center">
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-green-600 text-xl">✓</span>
           </div>
-          <h2 className="font-bold text-lg mb-2">Cuenta creada</h2>
-          <p className="text-sm text-neutral-500">{state.message}</p>
-          <Link href="/login" className="mt-5 inline-block text-sm font-semibold underline">
+          <h2 className="font-display text-xl font-semibold text-[#1C0A0A] mb-2">Cuenta creada</h2>
+          <p className="text-sm text-[#6B5B52]">{state.message}</p>
+          <Link href="/login" className="mt-5 inline-block text-sm font-semibold text-[#6a0008] hover:underline">
             Ir al login
           </Link>
         </div>
@@ -33,10 +33,13 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-        <h1 className="text-xl font-bold mb-1">Crear cuenta</h1>
-        <p className="text-sm text-neutral-500 mb-6">Únete a SmartBga</p>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#C9A84C]/15 text-[#8C1A1A] text-[11px] font-semibold tracking-[0.15em] uppercase mb-4">
+        Acceso exclusivo
+      </span>
+      <h1 className="font-display text-3xl md:text-4xl font-semibold text-[#1C0A0A]">Crear cuenta</h1>
+      <p className="text-sm text-[#6B5B52] mt-1.5 mb-6">Únete a SmartBga</p>
 
+      <div className="bg-white rounded-lg shadow-ambient p-6 md:p-8">
         <form action={action} className="flex flex-col gap-4">
           {/* Datos obligatorios */}
           <div className="flex flex-col gap-1.5">
@@ -74,7 +77,7 @@ export default function RegisterPage() {
 
           {/* Separador */}
           <div className="border-t border-neutral-100 pt-2 mt-1">
-            <p className="text-xs text-neutral-400 mb-3">Opcional — nos ayuda a mostrarte lo que más te gusta</p>
+            <p className="text-xs text-neutral-400 mb-3">Opcional: nos ayuda a mostrarte lo que más te gusta</p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
@@ -127,25 +130,25 @@ export default function RegisterPage() {
           </div>
 
           {state?.error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{state.error}</p>
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{state.error}</p>
           )}
 
           <button
             type="submit"
             disabled={pending}
-            className="w-full py-3 bg-neutral-900 text-white text-sm font-semibold rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50 mt-1"
+            className="w-full py-3 bg-[#6a0008] text-white text-sm font-semibold rounded-md hover:bg-[#8C1A1A] active:scale-[0.98] transition-all duration-150 disabled:opacity-50 mt-1"
           >
             {pending ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
         </form>
-
-        <p className="text-sm text-neutral-500 text-center mt-5">
-          ¿Ya tienes cuenta?{' '}
-          <Link href="/login" className="text-neutral-900 font-semibold hover:underline">
-            Ingresar
-          </Link>
-        </p>
       </div>
+
+      <p className="text-sm text-[#6B5B52] text-center mt-5">
+        ¿Ya tienes cuenta?{' '}
+        <Link href="/login" className="text-[#6a0008] font-semibold hover:underline">
+          Ingresar
+        </Link>
+      </p>
     </div>
   )
 }

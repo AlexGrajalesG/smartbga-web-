@@ -5,15 +5,16 @@
   --font-display: var(--font-display);
   --font-body:    var(--font-body);
 
-  /* Paleta "Vitrina BGA" — Comercio callejero + boutique */
-  --color-brand:        #1C0A0A;
-  --color-brand-red:    #8C1A1A;
+  /* Paleta "SmartBGA Prestige" — Onyx + Vinotinto + Gold + Cream */
+  --color-brand:          #1C0A0A; /* onyx-black */
+  --color-brand-red:      #6a0008; /* primary — vinotinto profundo */
   --color-brand-red-dark: #6B1313;
-  --color-brand-gold:   #C9A84C;
-  --color-brand-warm:   #FAF7F4;
-  --color-brand-muted:  #6B5B52;
-  --color-brand-gray:   #6B6B6B;
-  --color-brand-light:  #F5F5F5;
+  --color-brand-red-light: #8C1A1A; /* primary-container — bandas, acentos */
+  --color-brand-gold:     #C9A84C; /* accent-gold */
+  --color-brand-warm:     #F9F7F2; /* soft-cream */
+  --color-brand-muted:    #6B5B52;
+  --color-brand-gray:     #6B6B6B;
+  --color-brand-light:    #F5F5F5;
 }
 
 * { box-sizing: border-box; }
@@ -28,7 +29,7 @@ html { scroll-behavior: smooth; }
 .input-field {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  border-radius: 0.75rem;
+  border-radius: 0.375rem;
   border: 1px solid #e5e5e5;
   font-size: 0.875rem;
   outline: none;
@@ -38,9 +39,14 @@ html { scroll-behavior: smooth; }
 }
 .input-field:focus {
   border-color: transparent;
-  box-shadow: 0 0 0 2px #8C1A1A;
+  box-shadow: 0 0 0 2px #6a0008;
 }
 .input-field::placeholder { color: #a3a3a3; }
+
+/* Sombra ambiental suave "SmartBGA Prestige" — tinte onyx, sin bordes duros */
+.shadow-ambient {
+  box-shadow: 0 16px 40px -8px rgba(28, 10, 10, 0.06), 0 4px 12px rgba(28, 10, 10, 0.04);
+}
 
 /* ── ANIMACIONES ────────────────────────────────────────────── */
 @keyframes fade-up {

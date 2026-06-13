@@ -27,6 +27,8 @@ const METODO: Record<string, string> = {
   transferencia:  "Transferencia",
   addi:           "Addi",
   addi_presencial:"Addi presencial",
+  sistecredito:   "Sistecrédito",
+  wompi:          "Wompi",
 };
 
 function tiempoRelativo(fecha: string) {

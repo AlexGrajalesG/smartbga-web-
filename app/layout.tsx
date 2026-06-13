@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Outfit } from "next/font/google";
+import { EB_Garamond, Outfit } from "next/font/google";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
+const ebGaramond = EB_Garamond({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["400", "600"], // solo los pesos usados en headings
+  weight: ["500", "600"], // headline-md/lg y display-lg del sistema "SmartBGA Prestige"
 });
 
 const outfit = Outfit({
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${cormorant.variable} ${outfit.variable} h-full`}>
+    <html lang="es" className={`${ebGaramond.variable} ${outfit.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-white text-neutral-900 antialiased font-body">
         {children}
       </body>
