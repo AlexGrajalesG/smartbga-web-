@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; addi?: string }>;
 };
 
 interface ItemConProducto {
@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Tu pedido — SmartBga" };
 
 export default async function PedidoPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { id: wompiTxId } = await searchParams;
+  const { id: wompiTxId, addi: addiStatus } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -58,13 +58,24 @@ export default async function PedidoPage({ params, searchParams }: Props) {
     }
   }
 
-  const pagoAprobado = orden.estado === "confirmada" && orden.metodo_pago === "wompi" && wompiTxId;
+  // Verificar retorno desde Addi
+  const addiCancelled = addiStatus === "cancelled" && orden.metodo_pago === "addi";
+
+  if (addiStatus === "success" && orden.metodo_pago === "addi" && orden.estado === "pendiente") {
+    const admin = createAdminClient();
+    await admin.from("ordenes").update({ estado: "confirmada" }).eq("id", id);
+    orden.estado = "confirmada";
+  }
+
+  const pagoAprobado =
+    (orden.estado === "confirmada" && orden.metodo_pago === "wompi" && !!wompiTxId) ||
+    (orden.estado === "confirmada" && orden.metodo_pago === "addi" && addiStatus === "success");
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
 
       {/* Cabecera de estado */}
-      {wompiStatus === "DECLINED" || wompiStatus === "ERROR" ? (
+      {wompiStatus === "DECLINED" || wompiStatus === "ERROR" || addiCancelled ? (
         <div className="flex flex-col items-center text-center gap-3 mb-10">
           <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
             <XCircle size={28} className="text-red-500" />
@@ -103,12 +114,12 @@ export default async function PedidoPage({ params, searchParams }: Props) {
       )}
 
       {/* Banner de alerta si el pago falló */}
-      {(wompiStatus === "DECLINED" || wompiStatus === "ERROR") && (
+      {(wompiStatus === "DECLINED" || wompiStatus === "ERROR" || addiCancelled) && (
         <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3.5 mb-5 text-sm text-red-700">
           <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">
-              {wompiStatus === "DECLINED" ? "Pago rechazado" : "Error en el pago"}
+              {addiCancelled ? "Solicitud de Addi cancelada" : wompiStatus === "DECLINED" ? "Pago rechazado" : "Error en el pago"}
             </p>
             <p className="text-xs text-red-500 mt-0.5">
               El pedido está guardado. Puedes contactarnos por{" "}

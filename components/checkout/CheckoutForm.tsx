@@ -106,7 +106,7 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
 
     startTransition(async () => {
       try {
-        const { id, wompiUrl } = await crearOrden({
+        const { id, wompiUrl, addiUrl } = await crearOrden({
           items: items.map(({ producto, cantidad }) => ({ producto_id: producto.id, cantidad })),
           direccion_envio: direccionCompleta,
           celular_contacto: celular.trim(),
@@ -117,6 +117,8 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
         vaciar();
         if (wompiUrl) {
           window.location.href = wompiUrl;
+        } else if (addiUrl) {
+          window.location.href = addiUrl;
         } else {
           router.push(`/pedido/${id}`);
         }
@@ -347,8 +349,8 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
         >
           {pendiente && <Loader2 size={16} className="animate-spin" />}
           {pendiente
-            ? (metodoPago === "wompi" ? "Preparando pago…" : "Procesando…")
-            : (metodoPago === "wompi" ? "Continuar al pago seguro →" : "Confirmar pedido")}
+            ? (metodoPago === "wompi" ? "Preparando pago…" : metodoPago === "addi" ? "Preparando Addi…" : "Procesando…")
+            : (metodoPago === "wompi" ? "Continuar al pago seguro →" : metodoPago === "addi" ? "Continuar con Addi →" : "Confirmar pedido")}
         </button>
 
         {metodoPago === "wompi" && (
@@ -357,7 +359,12 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
             Pago seguro procesado por Wompi · Bancolombia
           </p>
         )}
-        {metodoPago !== "wompi" && (
+        {metodoPago === "addi" && (
+          <p className="text-[11px] text-[#6B5B52] text-center leading-relaxed">
+            Serás redirigido a Addi para completar tu solicitud de crédito.
+          </p>
+        )}
+        {metodoPago !== "wompi" && metodoPago !== "addi" && (
           <p className="text-[11px] text-[#6B5B52] text-center leading-relaxed">
             Al confirmar aceptas que nos contactemos contigo para coordinar la entrega.
           </p>

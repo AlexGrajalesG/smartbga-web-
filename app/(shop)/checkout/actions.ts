@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { buildWompiCheckoutUrl } from "@/lib/wompi";
+import { createAddiApplication } from "@/lib/addi";
 import { precioParaMetodo } from "@/lib/precios";
 import type { MetodoPago } from "@/types";
 
@@ -20,7 +21,7 @@ export interface CrearOrdenInput {
   notas?: string;
 }
 
-export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; wompiUrl?: string }> {
+export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; wompiUrl?: string; addiUrl?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Debes iniciar sesión para continuar");
@@ -154,6 +155,55 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
       customerEmail: user.email ?? undefined,
     });
     return { id: orden.id as string, wompiUrl };
+  }
+
+  if (input.metodo_pago === "addi") {
+    const clientId = process.env.ADDI_CLIENT_ID;
+    const clientSecret = process.env.ADDI_CLIENT_SECRET;
+    if (clientId && clientSecret) {
+      const headersList = await headers();
+      const host = headersList.get("host") ?? "www.smartbga.shop";
+      const proto = host.startsWith("localhost") ? "http" : "https";
+      const appUrl = `${proto}://${host}`;
+
+      const nombreCompleto =
+        input.direccion_envio.match(/\(([^)]+)\)$/)?.[1] ??
+        user.email?.split("@")[0] ??
+        "Cliente";
+      const [firstName, ...rest] = nombreCompleto.trim().split(" ");
+      const lastName = rest.join(" ") || firstName;
+
+      try {
+        const { applicationUrl, addiOrderId } = await createAddiApplication({
+          orderId: orden.id as string,
+          totalAmount: total,
+          items: input.items.map(({ producto_id, cantidad }) => {
+            const p = productoPorId.get(producto_id)!;
+            return {
+              sku: producto_id,
+              unitPrice: precioParaMetodo(p, input.metodo_pago),
+              quantity: cantidad,
+              description: p.nombre,
+            };
+          }),
+          customerFirstName: firstName,
+          customerLastName: lastName,
+          customerEmail: user.email ?? "",
+          customerPhone: input.celular_contacto,
+          successUrl: `${appUrl}/pedido/${orden.id}?addi=success`,
+          cancelUrl: `${appUrl}/pedido/${orden.id}?addi=cancelled`,
+        });
+
+        await admin
+          .from("ordenes")
+          .update({ addi_order_id: addiOrderId })
+          .eq("id", orden.id);
+
+        return { id: orden.id as string, addiUrl: applicationUrl };
+      } catch {
+        // Fallo de Addi — el pedido ya está creado, cae a flujo manual
+      }
+    }
   }
 
   return { id: orden.id as string };
