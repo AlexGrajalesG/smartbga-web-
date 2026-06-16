@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCarrito } from "@/lib/store/carrito";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Package } from "lucide-react";
+import AddiWidget from "@/components/productos/AddiWidget";
+import { precioParaMetodo } from "@/lib/precios";
 
 export default function CarritoPage() {
   const { items, quitar, actualizarCantidad, total } = useCarrito();
@@ -43,6 +45,8 @@ export default function CarritoPage() {
   }
 
   const totalItems = items.reduce((acc, i) => acc + i.cantidad, 0);
+  const totalAddi = items.reduce((acc, { producto, cantidad }) =>
+    acc + precioParaMetodo(producto, "addi") * cantidad, 0);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -174,6 +178,9 @@ export default function CarritoPage() {
               ${total().toLocaleString("es-CO")}
             </span>
           </div>
+
+          {/* Widget Addi — usa precio con método Addi */}
+          <AddiWidget amount={totalAddi} />
 
           {/* CTA checkout */}
           <Link

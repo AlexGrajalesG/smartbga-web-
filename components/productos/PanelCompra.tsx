@@ -5,6 +5,7 @@ import { useCarrito } from "@/lib/store/carrito";
 import { useNotificacionCarrito } from "@/lib/store/notificacion-carrito";
 import { ShoppingBag, Check, Minus, Plus, MessageCircle, Star, Zap, Wallet } from "lucide-react";
 import BotonFavorito from "./BotonFavorito";
+import AddiWidget from "./AddiWidget";
 import type { Producto, NivelPrecio } from "@/types";
 
 const GARANTIAS = [
@@ -186,6 +187,11 @@ export default function PanelCompra({ producto }: { producto: Producto }) {
           </div>
         );
       })()}
+
+      {/* Widget Addi — cuotas estimadas */}
+      {producto.precios?.addi && (
+        <AddiWidget amount={producto.precios.addi} />
+      )}
 
       {/* Urgencia */}
       {producto.stock > 0 && producto.stock <= 10 && (

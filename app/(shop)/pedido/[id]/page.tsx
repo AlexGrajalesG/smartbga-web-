@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ id?: string; addi?: string }>;
+  searchParams: Promise<{ id?: string; addi?: "success" | "declined" | "cancelled" }>;
 };
 
 interface ItemConProducto {
@@ -59,7 +59,7 @@ export default async function PedidoPage({ params, searchParams }: Props) {
   }
 
   // Verificar retorno desde Addi
-  const addiCancelled = addiStatus === "cancelled" && orden.metodo_pago === "addi";
+  const addiCancelled = (addiStatus === "cancelled" || addiStatus === "declined") && orden.metodo_pago === "addi";
 
   if (addiStatus === "success" && orden.metodo_pago === "addi" && orden.estado === "pendiente") {
     const admin = createAdminClient();

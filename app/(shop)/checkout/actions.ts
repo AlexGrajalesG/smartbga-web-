@@ -191,7 +191,8 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
           customerEmail: user.email ?? "",
           customerPhone: input.celular_contacto,
           successUrl: `${appUrl}/pedido/${orden.id}?addi=success`,
-          cancelUrl: `${appUrl}/pedido/${orden.id}?addi=cancelled`,
+          declinedUrl: `${appUrl}/pedido/${orden.id}?addi=declined`,
+          canceledUrl: `${appUrl}/pedido/${orden.id}?addi=cancelled`,
         });
 
         await admin

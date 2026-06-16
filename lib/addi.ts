@@ -1,9 +1,16 @@
 // Addi — BNPL (compra ahora, paga después) para Colombia
-// Docs: https://addi.com/developers
 
-const ADDI_API = process.env.ADDI_ENV === "production"
-  ? "https://api.addi.com"
-  : "https://api.addi.com"; // Addi usa las mismas URLs; sandbox es via credenciales test
+function addiAuthUrl() {
+  return process.env.ADDI_ENV === "production"
+    ? "https://auth.addi.com"
+    : "https://auth.addi-staging.com";
+}
+
+function addiApiUrl() {
+  return process.env.ADDI_ENV === "production"
+    ? "https://api.addi.com"
+    : "https://api.addi-staging.com";
+}
 
 async function getAddiToken(): Promise<string> {
   const clientId = process.env.ADDI_CLIENT_ID;
@@ -12,7 +19,7 @@ async function getAddiToken(): Promise<string> {
     throw new Error("ADDI_CLIENT_ID y ADDI_CLIENT_SECRET son obligatorios");
   }
 
-  const res = await fetch(`${ADDI_API}/oauth/token`, {
+  const res = await fetch(`${addiAuthUrl()}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -38,7 +45,8 @@ export interface AddiOrderParams {
   customerEmail: string;
   customerPhone: string;
   successUrl: string;
-  cancelUrl: string;
+  declinedUrl: string;
+  canceledUrl: string;
 }
 
 export async function createAddiApplication(params: AddiOrderParams): Promise<{ applicationUrl: string; addiOrderId: string }> {
@@ -47,32 +55,30 @@ export async function createAddiApplication(params: AddiOrderParams): Promise<{ 
   if (!allySlug) throw new Error("ADDI_ALLY_SLUG es obligatorio");
 
   const body = {
-    ally_slug: allySlug,
-    order: {
-      order_id: params.orderId,
-      total_amount: params.totalAmount,
-      currency: params.currency ?? "COP",
-      items: params.items.map((item) => ({
-        sku: item.sku,
-        unit_price: item.unitPrice,
-        quantity: item.quantity,
-        tax_amount: 0,
-        description: item.description,
-        category: "generic",
-      })),
-    },
+    allySlug,
+    orderId: params.orderId,
+    totalAmount: params.totalAmount,
+    currency: params.currency ?? "COP",
+    items: params.items.map((item) => ({
+      sku: item.sku,
+      name: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
     client: {
-      first_name: params.customerFirstName,
-      last_name: params.customerLastName || params.customerFirstName,
+      firstName: params.customerFirstName,
+      lastName: params.customerLastName || params.customerFirstName,
       email: params.customerEmail,
-      cellphone: params.customerPhone.replace(/\D/g, "").slice(-10),
-      cellphone_country_code: "+57",
+      cellPhone: params.customerPhone.replace(/\D/g, "").slice(-10),
     },
-    success_url: params.successUrl,
-    cancel_url: params.cancelUrl,
+    urls: {
+      successUrl: params.successUrl,
+      declinedUrl: params.declinedUrl,
+      canceledUrl: params.canceledUrl,
+    },
   };
 
-  const res = await fetch(`${ADDI_API}/v1/ally-management/orders`, {
+  const res = await fetch(`${addiApiUrl()}/api/v1/credit-applications`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -88,7 +94,7 @@ export async function createAddiApplication(params: AddiOrderParams): Promise<{ 
 
   const data = await res.json();
   const applicationUrl: string = data.applicationUrl ?? data.application_url ?? data.url ?? "";
-  const addiOrderId: string = data.id ?? data.order_id ?? params.orderId;
+  const addiOrderId: string = data.id ?? data.orderId ?? params.orderId;
 
   return { applicationUrl, addiOrderId };
 }
