@@ -44,7 +44,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contacto" className="hover:text-white transition-colors">
+                <Link
+                  href="https://www.instagram.com/smart.bga"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
                   ¿Eres proveedor? Contáctanos
                 </Link>
               </li>
