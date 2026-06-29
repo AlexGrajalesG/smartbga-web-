@@ -81,3 +81,39 @@ export async function logout() {
   await supabase.auth.signOut()
   redirect('/')
 }
+
+export async function forgotPassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = (formData.get('email') as string)?.trim()
+  if (!email) return { error: 'Ingresa tu email.' }
+
+  const supabase = await createClient()
+  const headersList = await headers()
+  const host = headersList.get('host') ?? 'www.smartbga.shop'
+  const proto = host.startsWith('localhost') ? 'http' : 'https'
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${proto}://${host}/auth/callback?next=/reset-password`,
+  })
+
+  if (error && error.message.toLowerCase().includes('rate limit')) {
+    return { error: 'Demasiados intentos. Espera unos minutos e intenta de nuevo.' }
+  }
+
+  return { message: 'Si tu email está registrado recibirás un link para restablecer tu contraseña. Revisa también tu carpeta de spam.' }
+}
+
+export async function updatePassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const password = formData.get('password') as string
+  const confirm = formData.get('confirm') as string
+
+  if (!password || !confirm) return { error: 'Completa todos los campos.' }
+  if (password.length < 6) return { error: 'La contraseña debe tener al menos 6 caracteres.' }
+  if (password !== confirm) return { error: 'Las contraseñas no coinciden.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) return { error: 'No se pudo actualizar la contraseña. El link puede haber expirado, solicita uno nuevo.' }
+
+  redirect('/')
+}

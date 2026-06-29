@@ -18,7 +18,7 @@ export default async function ImportarCatalogoPage() {
         <p className="text-xs font-bold tracking-widest text-[#8C1A1A] uppercase mb-1">Catalogo</p>
         <h1 className="font-display text-3xl font-semibold text-[#1C0A0A]">Importar catalogo</h1>
         <p className="text-sm text-neutral-500 mt-1.5 max-w-xl">
-          Sube un archivo CSV o Excel (.xlsx) para crear o actualizar varios productos a la vez.
+          Sube el archivo Excel (.xlsx) para crear o actualizar varios productos a la vez.
           Si el slug ya existe el producto se actualiza; si no, se crea.
         </p>
       </div>
@@ -29,7 +29,7 @@ export default async function ImportarCatalogoPage() {
           <p className="text-xs font-bold tracking-widest text-neutral-400 uppercase mb-0.5">Paso 1 (opcional)</p>
           <h2 className="text-lg font-semibold text-neutral-900">Subir fotos</h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Sube las fotos de los productos y copia las URLs para pegarlas en el CSV.
+            Sube las fotos de los productos y copia las URLs para pegarlas en el Excel.
           </p>
         </div>
         <UploadImagenesImportador />

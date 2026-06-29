@@ -91,39 +91,51 @@ function normalizarFila(raw: Record<string, string>): FilaCSV {
   };
 }
 
-// Usa ; como separador porque Excel en Colombia/Espana lo requiere (separador de listas regional)
-const SEP = ";";
-
-function csvFila(valores: string[]): string {
-  return valores.map((v) => `"${v.replace(/"/g, '""')}"`).join(SEP);
-}
-
 function generarPlantilla(categorias: Categoria[]) {
   const cat1 = categorias[0]?.slug ?? "";
 
-  const ejemplos = [
-    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario.", "10", "35000", "", ""],
-    ["Shampoo Anticaspa 400ml",    cat1, "",                    "5",  "22000", "", "https://www.instagram.com/reel/XXXXX/"],
-    ["Mascarilla Facial Vitamina", cat1, "",                    "0",  "18000", "", ""],
+  // Hoja 1: datos a llenar
+  const filasDatos: string[][] = [
+    HEADERS_AMIGABLES,
+    ["Crema Hidratante 200ml",     cat1, "Crema de uso diario con aloe vera. Ideal para piel seca.", "10", "35000", "", ""],
+    ["Shampoo Anticaspa 400ml",    cat1, "",                                                          "5",  "22000", "", "https://www.instagram.com/reel/XXXXX/"],
+    ["Mascarilla Facial Vitamina", cat1, "",                                                          "0",  "18000", "", ""],
   ];
 
-  const lineas: string[] = [HEADERS_AMIGABLES.join(SEP)];
-  for (const fila of ejemplos) lineas.push(csvFila(fila));
+  const hojaProductos = XLSX.utils.aoa_to_sheet(filasDatos);
+  hojaProductos["!cols"] = [
+    { wch: 38 }, // nombre
+    { wch: 28 }, // categoria
+    { wch: 65 }, // descripcion — ancha para copy-paste
+    { wch: 12 }, // unidades
+    { wch: 12 }, // precio
+    { wch: 65 }, // fotos
+    { wch: 50 }, // video
+  ];
 
-  if (categorias.length > 0) {
-    lineas.push("");
-    lineas.push(csvFila(["=== CATEGORIAS DISPONIBLES ===", ...Array(HEADERS_AMIGABLES.length - 1).fill("")]));
-    for (const c of categorias) {
-      lineas.push(csvFila([c.slug, c.nombre, ...Array(HEADERS_AMIGABLES.length - 2).fill("")]));
-    }
-  }
+  // Hoja 2: referencia de categorias y columnas
+  const filasRef: string[][] = [
+    ["CATEGORÍAS DISPONIBLES", ""],
+    ["slug (pega este valor en la columna 'categoria')", "nombre"],
+    ...categorias.map((c) => [c.slug, c.nombre]),
+    [],
+    ["GUÍA DE COLUMNAS", ""],
+    ...COLUMNAS_GUIA.map((c) => [c.col, (c.req ? "REQUERIDO — " : "") + c.desc, c.ej]),
+  ];
 
-  const bom = "﻿"; // UTF-8 BOM para que Excel reconozca tildes
-  const blob = new Blob([bom + lineas.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const hojaRef = XLSX.utils.aoa_to_sheet(filasRef);
+  hojaRef["!cols"] = [{ wch: 42 }, { wch: 60 }, { wch: 50 }];
+
+  const libro = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libro, hojaProductos, "Productos");
+  XLSX.utils.book_append_sheet(libro, hojaRef, "Referencia");
+
+  const buffer = XLSX.write(libro, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "plantilla-smartbga.csv";
+  a.download = "plantilla-smartbga.xlsx";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -244,9 +256,9 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
             <UploadCloud size={28} className={arrastrando ? "text-[#8C1A1A]" : "text-neutral-300"} />
             <div>
               <p className="text-sm font-semibold text-neutral-700">
-                {arrastrando ? "Suelta el archivo aqui" : "Arrastra tu CSV o Excel aqui"}
+                {arrastrando ? "Suelta el archivo aqui" : "Arrastra tu Excel aqui"}
               </p>
-              <p className="text-xs text-neutral-400 mt-0.5">o haz clic para seleccionar el archivo (.csv, .xlsx, .xls)</p>
+              <p className="text-xs text-neutral-400 mt-0.5">o haz clic para seleccionar el archivo (.xlsx, .xls, .csv)</p>
             </div>
           </label>
 
@@ -264,7 +276,7 @@ export default function ImportadorCSV({ categorias }: { categorias: Categoria[] 
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 hover:border-[#8C1A1A] hover:text-[#8C1A1A] transition-colors cursor-pointer whitespace-nowrap"
             >
               <Download size={13} />
-              Plantilla .CSV
+              Plantilla .XLSX
             </button>
           </div>
 

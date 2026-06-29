@@ -35,7 +35,12 @@ export default function LoginForm({ next, error }: { next: string | null; error?
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium text-[#1C0A0A]">Contraseña</label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="text-sm font-medium text-[#1C0A0A]">Contraseña</label>
+            <Link href="/forgot-password" className="text-xs text-[#6a0008] hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
           <input
             id="password"
             name="password"
