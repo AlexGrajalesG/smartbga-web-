@@ -12,7 +12,7 @@ export default async function CheckoutPage() {
 
   const { data: perfil } = await supabase
     .from("usuarios")
-    .select("nombre, celular, ciudad, barrio")
+    .select("nombre, celular, ciudad, barrio, direccion, departamento")
     .eq("auth_id", user.id)
     .single();
 

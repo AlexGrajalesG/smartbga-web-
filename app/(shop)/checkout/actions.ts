@@ -21,6 +21,29 @@ export interface CrearOrdenInput {
   notas?: string;
 }
 
+export async function guardarDireccion(data: {
+  celular: string;
+  ciudad: string;
+  barrio: string;
+  direccion: string;
+  departamento: string;
+}): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("usuarios")
+    .update({
+      celular:      data.celular      || null,
+      ciudad:       data.ciudad       || null,
+      barrio:       data.barrio       || null,
+      direccion:    data.direccion    || null,
+      departamento: data.departamento || null,
+    })
+    .eq("auth_id", user.id);
+}
+
 export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; wompiUrl?: string; addiUrl?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

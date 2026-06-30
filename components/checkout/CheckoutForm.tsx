@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCarrito } from "@/lib/store/carrito";
-import { crearOrden } from "@/app/(shop)/checkout/actions";
+import { crearOrden, guardarDireccion } from "@/app/(shop)/checkout/actions";
 import { precioParaMetodo } from "@/lib/precios";
 import { Wallet, Loader2, AlertCircle, MapPin, ShieldCheck } from "lucide-react";
 import type { MetodoPago } from "@/types";
@@ -14,13 +14,15 @@ interface PerfilCheckout {
   celular: string | null;
   ciudad: string | null;
   barrio: string | null;
+  direccion: string | null;
+  departamento: string | null;
 }
 
 const METODOS_PAGO: { key: MetodoPago; label: string; nota: string }[] = [
-  { key: "efectivo", label: "Pago contraentrega", nota: "Pagas en efectivo cuando recibes tu pedido" },
-  { key: "addi", label: "Addi — paga después", nota: "Llévatelo hoy y paga después · sin cuota inicial" },
-  { key: "sistecredito", label: "Sistecrédito — paga después", nota: "Llévatelo hoy y paga después · sin cuota inicial" },
-  { key: "wompi", label: "Tarjeta / PSE / Nequi / Daviplata", nota: "Paga en línea de forma segura · impulsado por Wompi (Bancolombia)" },
+  { key: "efectivo",     label: "Pago contraentrega",           nota: "Pagas en efectivo cuando recibes tu pedido" },
+  { key: "addi",         label: "Addi — paga después",          nota: "Llévatelo hoy y paga después · sin cuota inicial" },
+  { key: "sistecredito", label: "Sistecrédito — paga después",  nota: "Llévatelo hoy y paga después · sin cuota inicial" },
+  { key: "wompi",        label: "Tarjeta / PSE / Nequi / Daviplata", nota: "Paga en línea de forma segura · impulsado por Wompi (Bancolombia)" },
 ];
 
 // El pago contraentrega solo aplica dentro de Bucaramanga y su área metropolitana.
@@ -52,18 +54,17 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
 
   const [nombre, setNombre] = useState(perfil?.nombre ?? "");
   const [celular, setCelular] = useState(perfil?.celular ?? "");
-  const [departamento, setDepartamento] = useState("Santander");
+  const [departamento, setDepartamento] = useState(perfil?.departamento ?? "Santander");
   const [ciudad, setCiudad] = useState(perfil?.ciudad ?? "");
   const [barrio, setBarrio] = useState(perfil?.barrio ?? "");
-  const [calle, setCalle] = useState("");
+  const [calle, setCalle] = useState(perfil?.direccion ?? "");
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
+  const [guardarDir, setGuardarDir] = useState(false);
 
   const enAreaMetropolitana =
     departamento === "Santander" && AREA_METROPOLITANA_BGA.includes(normalizarTexto(ciudad));
-  const metodosDisponibles = enAreaMetropolitana
-    ? METODOS_PAGO
-    : METODOS_PAGO.filter((m) => m.key !== "efectivo");
+  const metodosDisponibles = METODOS_PAGO;
 
   const totalPorMetodo = (metodo: MetodoPago) =>
     items.reduce((acc, { producto, cantidad }) => acc + precioParaMetodo(producto, metodo) * cantidad, 0);
@@ -106,6 +107,16 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
 
     startTransition(async () => {
       try {
+        if (guardarDir) {
+          await guardarDireccion({
+            celular: celular.trim(),
+            ciudad: ciudad.trim(),
+            barrio: barrio.trim(),
+            direccion: calle.trim(),
+            departamento,
+          });
+        }
+
         const { id, wompiUrl, addiUrl } = await crearOrden({
           items: items.map(({ producto, cantidad }) => ({ producto_id: producto.id, cantidad })),
           direccion_envio: direccionCompleta,
@@ -241,6 +252,19 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
               placeholder="Ej. Dejar con portería, llamar antes de subir…"
             />
           </div>
+
+          {/* Guardar dirección */}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <input
+              type="checkbox"
+              checked={guardarDir}
+              onChange={(e) => setGuardarDir(e.target.checked)}
+              className="w-4 h-4 rounded border-neutral-300 accent-[#6a0008] cursor-pointer"
+            />
+            <span className="text-sm text-neutral-600 group-hover:text-neutral-800 transition-colors">
+              Guardar esta dirección para futuras compras
+            </span>
+          </label>
         </div>
 
         {/* Sección: método de pago */}
@@ -251,14 +275,10 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
               Método de pago
             </span>
           </div>
-          {!enAreaMetropolitana && (
-            <p className="px-4 pb-2 text-xs text-[#6B5B52] leading-relaxed">
-              El pago contraentrega solo está disponible en Bucaramanga y su área metropolitana.
-              Para {ciudad.trim() || "tu ciudad"}, elige una de estas opciones.
-            </p>
-          )}
           <div className="flex flex-col">
             {metodosDisponibles.map(({ key, label, nota }, i) => {
+              const esContraentrega = key === "efectivo";
+              const deshabilitado = esContraentrega && !enAreaMetropolitana;
               const activo = metodoPago === key;
               const monto = montosPorMetodo[key];
               const esMasBarato = monto === montoMinimo && hayDiferenciaDePrecio;
@@ -266,11 +286,17 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setMetodoPago(key)}
+                  onClick={() => !deshabilitado && setMetodoPago(key)}
                   aria-pressed={activo}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors cursor-pointer ${
+                  disabled={deshabilitado}
+                  className={`flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
                     i !== metodosDisponibles.length - 1 ? "border-b border-neutral-200/70" : ""
-                  } ${activo ? "bg-[#6a0008]/[0.06]" : "hover:bg-neutral-100/70"}`}
+                  } ${deshabilitado
+                      ? "opacity-40 cursor-not-allowed"
+                      : activo
+                        ? "bg-[#6a0008]/[0.06] cursor-pointer"
+                        : "hover:bg-neutral-100/70 cursor-pointer"
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span
@@ -281,9 +307,14 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
                       {activo && <span className="w-2 h-2 rounded-full bg-[#6a0008]" />}
                     </span>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-semibold text-[#1C0A0A]">{label}</p>
                         {key === "wompi" && <ShieldCheck size={13} className="text-green-600 flex-shrink-0" />}
+                        {deshabilitado && (
+                          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                            Solo BGA y área metropolitana
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-[#6B5B52]">{nota}</p>
                     </div>
