@@ -90,12 +90,17 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
     usuario = nuevo;
   }
 
-  const direccion = input.direccion_envio.trim();
-  const celular = input.celular_contacto.trim();
-  const notas = input.notas?.trim() || null;
-  if (!input.items.length) throw new Error("Tu carrito está vacío");
-  if (!direccion) throw new Error("La dirección de envío es obligatoria");
-  if (!celular) throw new Error("El celular de contacto es obligatorio");
+  const direccion = input.direccion_envio.trim().slice(0, 500);
+  const celular   = input.celular_contacto.trim().slice(0, 30);
+  if (!input.items.length)   throw new Error("Tu carrito está vacío");
+  if (input.items.length > 50) throw new Error("El carrito no puede tener más de 50 productos distintos");
+  if (!direccion)            throw new Error("La dirección de envío es obligatoria");
+  if (!celular)              throw new Error("El celular de contacto es obligatorio");
+
+  for (const { cantidad } of input.items) {
+    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 999)
+      throw new Error("Cantidad inválida en uno de los productos");
+  }
 
   const admin = createAdminClient();
 
@@ -118,6 +123,8 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
     }
   }
 
+  const notas = input.notas?.trim().slice(0, 500) || null;
+
   const subtotal = input.items.reduce((acc, { producto_id, cantidad }) => {
     const producto = productoPorId.get(producto_id)!;
     return acc + precioParaMetodo(producto, input.metodo_pago) * cantidad;
@@ -125,6 +132,33 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
 
   const costoEnvio = calcularCostoEnvio(subtotal, input.ciudad, input.departamento);
   const total = subtotal + costoEnvio;
+
+  // Reservar stock ANTES de crear la orden para evitar overselling.
+  // Usamos .gte("stock", cantidad) como guard atómico: si otro usuario compró primero,
+  // la condición falla y el update no afecta filas → lo detectamos y revertimos.
+  const stockReservado: Array<{ producto_id: string; stockAnterior: number }> = [];
+
+  for (const { producto_id, cantidad } of input.items) {
+    const producto = productoPorId.get(producto_id)!;
+    const { data: reserva } = await admin
+      .from("productos")
+      .update({ stock: producto.stock - cantidad })
+      .eq("id", producto_id)
+      .gte("stock", cantidad)
+      .select("id");
+
+    if (!reserva?.length) {
+      // El update no afectó filas → stock insuficiente. Revertir los ya reservados.
+      await Promise.all(
+        stockReservado.map(({ producto_id: pid, stockAnterior }) =>
+          admin.from("productos").update({ stock: stockAnterior }).eq("id", pid)
+        )
+      );
+      throw new Error(`"${producto.nombre}" se agotó justo antes de confirmar. Intenta de nuevo.`);
+    }
+
+    stockReservado.push({ producto_id, stockAnterior: producto.stock });
+  }
 
   const direccionCompleta = `${direccion} · Contacto: ${celular}`;
 
@@ -143,7 +177,16 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
     })
     .select("id")
     .single();
-  if (errorOrden) throw new Error(errorOrden.message);
+
+  if (errorOrden) {
+    // Si la orden falla, devolver el stock reservado
+    await Promise.all(
+      stockReservado.map(({ producto_id: pid, stockAnterior }) =>
+        admin.from("productos").update({ stock: stockAnterior }).eq("id", pid)
+      )
+    );
+    throw new Error(errorOrden.message);
+  }
 
   const filasItems = input.items.map(({ producto_id, cantidad }) => {
     const producto = productoPorId.get(producto_id)!;
@@ -162,17 +205,6 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
     .insert(filasItems)
     .select("id, proveedor_id");
   if (errorItems) throw new Error(errorItems.message);
-
-  await Promise.all(
-    input.items.map(({ producto_id, cantidad }) => {
-      const producto = productoPorId.get(producto_id)!;
-      return admin
-        .from("productos")
-        .update({ stock: producto.stock - cantidad })
-        .eq("id", producto_id)
-        .gte("stock", cantidad);
-    })
-  );
 
   const notificaciones = (itemsCreados ?? [])
     .filter((item) => item.proveedor_id)

@@ -16,7 +16,15 @@ export default function SubidorImagenes({ slug, onSubidas }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const subir = (archivos: FileList | File[]) => {
-    const lista = Array.from(archivos).filter((a) => a.type.startsWith("image/"));
+    const MAX_MB = 5;
+    const lista = Array.from(archivos).filter((a) => {
+      if (!a.type.startsWith("image/")) return false;
+      if (a.size > MAX_MB * 1024 * 1024) {
+        setError(`"${a.name}" supera los ${MAX_MB} MB permitidos.`);
+        return false;
+      }
+      return true;
+    });
     if (lista.length === 0) return;
 
     setError(null);
