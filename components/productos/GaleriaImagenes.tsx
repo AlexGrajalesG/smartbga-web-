@@ -33,14 +33,11 @@ export default function GaleriaImagenes({
             src={imagenes[activa]}
             alt={`${nombre} - foto ${activa + 1}`}
             fill
-            className="object-cover"
+            className="object-contain p-3"
             priority={activa === 0}
             sizes="(max-width: 1024px) 100vw, 55vw"
           />
         </div>
-
-        {/* Degradado inferior */}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
 
         {/* Flechas */}
         {imagenes.length > 1 && (
@@ -97,7 +94,7 @@ export default function GaleriaImagenes({
                 src={img}
                 alt={`${nombre} ${i + 1}`}
                 fill
-                className="object-cover"
+                className="object-contain p-1"
                 sizes="72px"
               />
             </button>

@@ -25,7 +25,7 @@ export default function ProductoCard({
           alt={producto.nombre}
           fill
           priority={priority}
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-contain p-3 transition-transform duration-500 group-hover:scale-[1.03]"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
         />
 
