@@ -113,6 +113,19 @@ function generarPlantilla(categorias: Categoria[]) {
     { wch: 50 }, // video
   ];
 
+  // Altura fija en 200 filas — impide que la fila se ensanche al pegar texto largo
+  hojaProductos["!rows"] = Array.from({ length: 200 }, () => ({ hpt: 20 }));
+
+  // Desactivar wrap de texto en todas las celdas existentes
+  const range = XLSX.utils.decode_range(hojaProductos["!ref"] ?? "A1");
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const ref = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!hojaProductos[ref]) continue;
+      hojaProductos[ref].s = { alignment: { wrapText: false } };
+    }
+  }
+
   // Hoja 2: referencia de categorias y columnas
   const filasRef: string[][] = [
     ["CATEGORÍAS DISPONIBLES", ""],
@@ -130,7 +143,7 @@ function generarPlantilla(categorias: Categoria[]) {
   XLSX.utils.book_append_sheet(libro, hojaProductos, "Productos");
   XLSX.utils.book_append_sheet(libro, hojaRef, "Referencia");
 
-  const buffer = XLSX.write(libro, { bookType: "xlsx", type: "array" });
+  const buffer = XLSX.write(libro, { bookType: "xlsx", type: "array", cellStyles: true });
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
