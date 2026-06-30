@@ -18,7 +18,25 @@ export interface CrearOrdenInput {
   direccion_envio: string;
   celular_contacto: string;
   metodo_pago: MetodoPago;
+  ciudad: string;
+  departamento: string;
   notas?: string;
+}
+
+const ENVIO_GRATIS_DESDE = 90_000;
+const COSTO_ENVIO_EXTERNO = 12_000;
+const AREA_METROPOLITANA_BGA = ["bucaramanga", "floridablanca", "giron", "piedecuesta"];
+
+function normalizarCiudad(s: string) {
+  return s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+export function calcularCostoEnvio(subtotal: number, ciudad: string, departamento: string): number {
+  const enAreaMetro =
+    departamento === "Santander" &&
+    AREA_METROPOLITANA_BGA.includes(normalizarCiudad(ciudad));
+  if (enAreaMetro || subtotal >= ENVIO_GRATIS_DESDE) return 0;
+  return COSTO_ENVIO_EXTERNO;
 }
 
 export async function guardarDireccion(data: {
@@ -100,10 +118,13 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
     }
   }
 
-  const total = input.items.reduce((acc, { producto_id, cantidad }) => {
+  const subtotal = input.items.reduce((acc, { producto_id, cantidad }) => {
     const producto = productoPorId.get(producto_id)!;
     return acc + precioParaMetodo(producto, input.metodo_pago) * cantidad;
   }, 0);
+
+  const costoEnvio = calcularCostoEnvio(subtotal, input.ciudad, input.departamento);
+  const total = subtotal + costoEnvio;
 
   const direccionCompleta = `${direccion} · Contacto: ${celular}`;
 
@@ -113,6 +134,8 @@ export async function crearOrden(input: CrearOrdenInput): Promise<{ id: string; 
       usuario_id: usuario.id,
       canal: "online",
       estado: "pendiente",
+      subtotal,
+      costo_envio: costoEnvio,
       total,
       direccion_envio: direccionCompleta,
       metodo_pago: input.metodo_pago,

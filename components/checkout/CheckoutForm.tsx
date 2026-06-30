@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCarrito } from "@/lib/store/carrito";
-import { crearOrden, guardarDireccion } from "@/app/(shop)/checkout/actions";
+import { crearOrden, guardarDireccion, calcularCostoEnvio } from "@/app/(shop)/checkout/actions";
 import { precioParaMetodo } from "@/lib/precios";
 import { Wallet, Loader2, AlertCircle, MapPin, ShieldCheck } from "lucide-react";
 import type { MetodoPago } from "@/types";
@@ -66,12 +66,14 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
     departamento === "Santander" && AREA_METROPOLITANA_BGA.includes(normalizarTexto(ciudad));
   const metodosDisponibles = METODOS_PAGO;
 
-  const totalPorMetodo = (metodo: MetodoPago) =>
+  const subtotalPorMetodo = (metodo: MetodoPago) =>
     items.reduce((acc, { producto, cantidad }) => acc + precioParaMetodo(producto, metodo) * cantidad, 0);
-  const total = totalPorMetodo(metodoPago);
+  const subtotal = subtotalPorMetodo(metodoPago);
+  const costoEnvio = calcularCostoEnvio(subtotal, ciudad, departamento);
+  const total = subtotal + costoEnvio;
 
   const montosPorMetodo = Object.fromEntries(
-    metodosDisponibles.map(({ key }) => [key, totalPorMetodo(key)])
+    metodosDisponibles.map(({ key }) => [key, subtotalPorMetodo(key) + calcularCostoEnvio(subtotalPorMetodo(key), ciudad, departamento)])
   ) as Record<MetodoPago, number>;
   const montoMinimo = Math.min(...Object.values(montosPorMetodo));
   const hayDiferenciaDePrecio = Object.values(montosPorMetodo).some((m) => m !== montoMinimo);
@@ -122,6 +124,8 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
           direccion_envio: direccionCompleta,
           celular_contacto: celular.trim(),
           metodo_pago: metodoPago,
+          ciudad: ciudad.trim(),
+          departamento,
           notas: notas.trim() || undefined,
         });
         enviado.current = true;
@@ -359,8 +363,30 @@ export default function CheckoutForm({ perfil }: { perfil: PerfilCheckout | null
 
         <div className="h-px bg-neutral-100" />
 
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-[#6B5B52]">Subtotal</span>
+            <span className="tabular-nums text-neutral-700">${subtotal.toLocaleString("es-CO")}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-[#6B5B52]">Envío</span>
+            {costoEnvio === 0 ? (
+              <span className="font-semibold text-green-600">Gratis</span>
+            ) : (
+              <span className="tabular-nums text-neutral-700">${costoEnvio.toLocaleString("es-CO")}</span>
+            )}
+          </div>
+          {!enAreaMetropolitana && costoEnvio > 0 && (
+            <p className="text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-md leading-snug">
+              Agrega <strong>${(90_000 - subtotal).toLocaleString("es-CO")}</strong> más para envío gratis
+            </p>
+          )}
+        </div>
+
+        <div className="h-px bg-neutral-100" />
+
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[#6B5B52]">Total</span>
+          <span className="text-sm font-semibold text-[#1C0A0A]">Total</span>
           <span className="text-xl font-bold text-[#1C0A0A] tabular-nums">
             ${total.toLocaleString("es-CO")}
           </span>
