@@ -200,8 +200,8 @@ export default function UploadImagenesImportador() {
           </div>
 
           <p className="text-xs text-neutral-400">
-            Pega la URL en la columna <span className="font-mono">imagenes</span> del CSV.
-            Para varios productos, separa las URLs con punto y coma (;).
+            Pega la URL en la columna <span className="font-mono">fotos</span> del Excel.
+            Para varias fotos del mismo producto, sepáralas con punto y coma (;).
           </p>
         </div>
       )}

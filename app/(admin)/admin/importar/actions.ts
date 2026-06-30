@@ -20,9 +20,8 @@ export async function subirImagenesImportador(formData: FormData): Promise<{ url
   await Promise.all(
     archivos.map(async (archivo) => {
       try {
-        // Usa un slug temporal basado en el nombre del archivo
-        const slug = "importar/" + archivo.name.replace(/\.[^.]+$/, "").replace(/[^a-z0-9]/gi, "-").toLowerCase();
-        const url = await subirImagenProducto(archivo, slug);
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        const url = await subirImagenProducto(archivo, `importar/${id}`);
         urls.push(url);
       } catch {
         errores.push(archivo.name);
