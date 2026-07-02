@@ -147,7 +147,7 @@ export default async function HomePage() {
       {/* ════════════════════════════════════════════════════════
           DIFERENCIADORES — 3 pilares
       ════════════════════════════════════════════════════════ */}
-      <section className="bg-[#FAF7F4] border-y border-neutral-100 mt-6 overflow-hidden">
+      <section id="nosotros" className="bg-[#FAF7F4] border-y border-neutral-100 mt-6 overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 py-16 md:py-28">
           <div className="flex flex-col gap-6 md:flex-row md:items-start">
 

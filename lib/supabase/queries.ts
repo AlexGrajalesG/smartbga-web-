@@ -2,18 +2,26 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from './server'
 import type { Producto, Categoria } from '@/types'
 
-async function _getProductos(categoriaSlug?: string): Promise<Producto[]> {
+export type GetProductosParams = {
+  categoria?: string
+  busqueda?: string
+  precioMin?: number
+  precioMax?: number
+  orden?: string
+}
+
+async function _getProductos(params: GetProductosParams = {}): Promise<Producto[]> {
   const supabase = createPublicClient()
   let query = supabase
     .from('productos')
     .select('*, categoria:categorias(*)')
     .eq('activo', true)
-    .order('created_at', { ascending: false })
-  if (categoriaSlug) {
+
+  if (params.categoria) {
     const { data: cat } = await supabase
       .from('categorias')
       .select('id')
-      .eq('slug', categoriaSlug)
+      .eq('slug', params.categoria)
       .single()
     if (cat) {
       query = query.eq('categoria_id', cat.id)
@@ -21,6 +29,26 @@ async function _getProductos(categoriaSlug?: string): Promise<Producto[]> {
       return []
     }
   }
+
+  if (params.busqueda?.trim()) {
+    query = query.ilike('nombre', `%${params.busqueda.trim()}%`)
+  }
+
+  if (params.precioMin && params.precioMin > 0) {
+    query = query.gte('precio_venta', params.precioMin)
+  }
+  if (params.precioMax && params.precioMax > 0) {
+    query = query.lte('precio_venta', params.precioMax)
+  }
+
+  if (params.orden === 'precio_asc') {
+    query = query.order('precio_venta', { ascending: true })
+  } else if (params.orden === 'precio_desc') {
+    query = query.order('precio_venta', { ascending: false })
+  } else {
+    query = query.order('created_at', { ascending: false })
+  }
+
   const { data, error } = await query
   if (error) throw error
   return data ?? []
