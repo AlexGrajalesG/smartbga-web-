@@ -10,7 +10,16 @@ async function _getProductos(categoriaSlug?: string): Promise<Producto[]> {
     .eq('activo', true)
     .order('created_at', { ascending: false })
   if (categoriaSlug) {
-    query = query.eq('categorias.slug', categoriaSlug)
+    const { data: cat } = await supabase
+      .from('categorias')
+      .select('id')
+      .eq('slug', categoriaSlug)
+      .single()
+    if (cat) {
+      query = query.eq('categoria_id', cat.id)
+    } else {
+      return []
+    }
   }
   const { data, error } = await query
   if (error) throw error
@@ -36,11 +45,12 @@ async function _getCategorias(): Promise<Categoria[]> {
   return data ?? []
 }
 
-export const getProductos = unstable_cache(
-  _getProductos,
-  ['productos'],
-  { revalidate: 60, tags: ['productos'] }
-)
+export const getProductos = (categoriaSlug?: string) =>
+  unstable_cache(
+    () => _getProductos(categoriaSlug),
+    ['productos', categoriaSlug ?? 'all'],
+    { revalidate: 60, tags: ['productos'] }
+  )()
 
 export const getProductoBySlug = (slug: string) =>
   unstable_cache(

@@ -18,14 +18,16 @@ export default function FiltrosCategorias({ categorias }: { categorias: Categori
     router.push(`/productos?${params.toString()}`);
   }
 
+  if (categorias.length === 0) return null;
+
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex gap-2 flex-wrap mb-2">
       <button
         onClick={() => filtrar(null)}
-        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
           !categoriaActual
-            ? "bg-neutral-900 text-white border-neutral-900"
-            : "border-neutral-300 text-neutral-600 hover:border-neutral-900"
+            ? "bg-[#1C0A0A] text-white border-[#1C0A0A]"
+            : "border-neutral-200 text-neutral-500 hover:border-[#1C0A0A] hover:text-[#1C0A0A]"
         }`}
       >
         Todos
@@ -34,10 +36,10 @@ export default function FiltrosCategorias({ categorias }: { categorias: Categori
         <button
           key={cat.id}
           onClick={() => filtrar(cat.slug)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
             categoriaActual === cat.slug
-              ? "bg-neutral-900 text-white border-neutral-900"
-              : "border-neutral-300 text-neutral-600 hover:border-neutral-900"
+              ? "bg-[#1C0A0A] text-white border-[#1C0A0A]"
+              : "border-neutral-200 text-neutral-500 hover:border-[#1C0A0A] hover:text-[#1C0A0A]"
           }`}
         >
           {cat.nombre}
