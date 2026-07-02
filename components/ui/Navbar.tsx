@@ -55,7 +55,7 @@ export default function Navbar({ user, mostrarPanelAdmin = false, categorias = [
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="SmartBga" width={120} height={120} className="h-12 w-auto" priority />
+            <Image src="/logo.jpg" alt="SmartBga" width={120} height={120} className="h-12 w-auto" priority />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-500">
