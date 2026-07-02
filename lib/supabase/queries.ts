@@ -45,12 +45,11 @@ async function _getCategorias(): Promise<Categoria[]> {
   return data ?? []
 }
 
-export const getProductos = (categoriaSlug?: string) =>
-  unstable_cache(
-    () => _getProductos(categoriaSlug),
-    ['productos', categoriaSlug ?? 'all'],
-    { revalidate: 60, tags: ['productos'] }
-  )()
+export const getProductos = unstable_cache(
+  _getProductos,
+  ['productos'],
+  { revalidate: 60, tags: ['productos'] }
+)
 
 export const getProductoBySlug = (slug: string) =>
   unstable_cache(
