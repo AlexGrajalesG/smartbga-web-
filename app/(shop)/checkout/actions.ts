@@ -6,6 +6,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { buildWompiCheckoutUrl } from "@/lib/wompi";
 import { createAddiApplication } from "@/lib/addi";
 import { precioParaMetodo } from "@/lib/precios";
+import { calcularCostoEnvio } from "@/lib/envio";
 import type { MetodoPago } from "@/types";
 
 export interface ItemOrden {
@@ -21,22 +22,6 @@ export interface CrearOrdenInput {
   ciudad: string;
   departamento: string;
   notas?: string;
-}
-
-const ENVIO_GRATIS_DESDE = 90_000;
-const COSTO_ENVIO_EXTERNO = 12_000;
-const AREA_METROPOLITANA_BGA = ["bucaramanga", "floridablanca", "giron", "piedecuesta"];
-
-function normalizarCiudad(s: string) {
-  return s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-}
-
-export function calcularCostoEnvio(subtotal: number, ciudad: string, departamento: string): number {
-  const enAreaMetro =
-    departamento === "Santander" &&
-    AREA_METROPOLITANA_BGA.includes(normalizarCiudad(ciudad));
-  if (enAreaMetro || subtotal >= ENVIO_GRATIS_DESDE) return 0;
-  return COSTO_ENVIO_EXTERNO;
 }
 
 export async function guardarDireccion(data: {
